@@ -23,9 +23,13 @@ odoo_version:
   default: 16.0
   help: Odoo version
 
+# Remove ?
 use_secret:
   type: bool
   help: generate docker-compose dedicate file for secret
+
+# ak in the container ?
+# odoo-spec ?
 
 org_name:
   type: str
@@ -33,6 +37,9 @@ org_name:
   help:
     Tell me the Organization name. It's supposed to be human-readable. It will be used
     in the author key of the __manifest__ files.
+  # do not ask the question
+  # but allow to change it manually
+  when: True
 
 _skip_if_exists:
   - frozen.yaml
@@ -42,7 +49,7 @@ _skip_if_exists:
   - odoo/odoo-spec.yaml
   - odoo/requirements.txt
   - odoo/setup.py
-  - clear-ci-db-token
+  - clear-ci-db-token # To be removed
   - clear-ci.secrets.docker-compose.yml
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml

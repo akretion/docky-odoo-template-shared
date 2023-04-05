@@ -32,8 +32,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.localhost`)"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${COMPOSE_PROJECT_NAME}.localhost`)
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`)
         && PathPrefix(`/longpolling/`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}odoo"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.service=${COMPOSE_PROJECT_NAME}odoo_long"
@@ -46,7 +46,7 @@ services:
       - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}corsHeader.headers.accessControlExposeHeaders=Content-Length,Content-Range"
       - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}corsHeader.headers.addVaryHeader=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}corsHeader"
-      - "docky.help=http://${COMPOSE_PROJECT_NAME}.localhost"
+      - "docky.help=http://${DOMAIN}"
     links:
       - db
       - kwkhtmltopdf
@@ -58,7 +58,7 @@ services:
       - ./data/addons:/data/odoo/addons
       - ./data/filestore:/data/odoo/filestore
       - ./data/sessions:/data/odoo/sessions
-      - ./.home:/home/odoo # This directory is used for keeping the bash/psql history
+      - ./.home/:/home/odoo # This directory is used for keeping the bash/psql history
   kwkhtmltopdf:
     image: acsone/kwkhtmltopdf
     networks:
