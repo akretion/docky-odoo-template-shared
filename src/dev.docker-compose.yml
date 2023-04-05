@@ -4,22 +4,23 @@ networks:
   local:
 services:
   db:
-    image: postgres:13
-    user: "${UID}:${UID}"
+    image: postgres/postgres:15
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_DB=db
       - POSTGRES_PASSWORD=odoo
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
-      - .db/:/var/lib/postgresql/data
+      - .db/data:/var/lib/postgresql/data/pgdata
     networks:
       - local
   odoo:
     build:
       context: odoo
       target: dev
+    image: ${COMPOSE_PROJECT_NAME}
+    # cache_from: ${COMPOSE_PROJECT_NAME} # main branch
     environment:
-      PYTHONDONTWRITEBYTECODE: "True"
       PGDATABASE: db
       PGHOST: db
       PGPASSWORD: odoo

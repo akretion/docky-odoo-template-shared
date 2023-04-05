@@ -39,7 +39,7 @@ org_name:
     in the author key of the __manifest__ files.
   # do not ask the question
   # but allow to change it manually
-  when: True
+  when: false
 
 _skip_if_exists:
   - frozen.yaml

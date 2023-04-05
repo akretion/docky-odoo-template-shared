@@ -1,30 +1,49 @@
-FROM ghcr.io/akretion/odoo-docker:{{ odoo_version }}-latest as base
+# syntax=docker/dockerfile:1
+FROM akraphrock14.0 as base
 
-# syntax = docker/dockerfile:1.4
+# There is a high chance that multiple projects
+# share the same odoo/src/requirements.txt
+# install odoo requirements first
 
-FROM base as prod
+COPY ./src/setup.py ./src/setup/ /odoo/src/
 
-# Build and install odoo
-COPY odoo-spec.yaml /odoo/odoo-spec.yaml
-ENV BUILD_RESTRICT_LANG=fr.po
-RUN --mount=type=cache,target=/root/.cache /install/build-odoo
-RUN --mount=type=cache,target=/root/.cache pip install -e /odoo/src
+#COPY ./src/setup /odoo/src/setup
 
-# Build external source
-COPY spec.yaml /odoo/spec.yaml
-COPY frozen.yaml /odoo/frozen.yaml
-RUN --mount=type=cache,target=/root/.cache /install/build-odoo-external
-COPY ./requirements.txt /odoo/
-RUN --mount=type=cache,target=/root/.cache cd /odoo && pip install -r requirements.txt
 
-# Copy local project
-COPY ./start-entrypoint.d /odoo/start-entrypoint.d
-COPY ./local-src /odoo/local-src
-COPY ./scripts /odoo/scripts
+#COPY ./src/odoo/cli /odoo/src/odoo/cli
+#COPY ./src/odoo/conf /odoo/src/odoo/conf
+#COPY ./src/odoo/tools /odoo/src/odoo/tools
+#COPY ./src/odoo/service /odoo/src/odoo/service
+#COPY ./src/odoo/*.py /odoo/src/odoo/
+#COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
+# COPY ./src/odoo/release.py /odoo/src/odoo/release.py
+#RUN rm -rf /odoo/src/addons && pip install -e /odoo/src/
 
-FROM base as dev
+FROM base as thisproject
+COPY ./requirements.txt /odoo/requirements.txt
+RUN \
+  pip install --no-cache-dir \
+    -r /odoo/requirements.txt \
+    -f https://wheelhouse.acsone.eu/manylinux2014
+
+ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/odoo/odoo/addons,/odoo/links
+
+#COPY ./templates /odoo/templates
+
+
+FROM thisproject as dev
+
+# allow to pip install anything temporary
+COPY ./dev_requirements.txt /odoo/dev_requirements.txt
+RUN \
+  pip install --no-cache-dir \
+    -r /odoo/dev_requirements.txt \
+    -f https://wheelhouse.acsone.eu/manylinux2014
+RUN chmod 777 -R /odoo/lib /odoo/bin
+
+FROM thisproject as prod
 
 COPY ./src /odoo/src
-RUN --mount=type=cache,target=/root/.cache pip install -e /odoo/src
-COPY ./requirements.txt /odoo/
-RUN --mount=type=cache,target=/root/.cache pip install -r /odoo/requirements.txt
+COPY ./external-src /odoo/external-src
+COPY ./links /odoo/links
+
