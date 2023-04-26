@@ -18,8 +18,8 @@ services:
     build:
       context: odoo
       target: dev
-    image: ${COMPOSE_PROJECT_NAME}
-    # cache_from: ${COMPOSE_PROJECT_NAME} # main branch
+    image: ${PROJECT_NAME}
+    # cache_from: ${PROJECT_NAME} # main branch
     environment:
       PGDATABASE: db
       PGHOST: db
@@ -55,11 +55,18 @@ services:
       - local
       - traefik
     volumes:
-      - ./odoo:/odoo
+      # do not mount /odoo directly
+      # we want to preserve /odoo/venv
+      - ./odoo/external-src:/odoo/external-src
+      - ./odoo/links:/odoo/links
+      - ./odoo/local-src:/odoo/local-src
+      - ./odoo/src:/odoo/src
+      # data
       - ./data/addons:/data/odoo/addons
       - ./data/filestore:/data/odoo/filestore
       - ./data/sessions:/data/odoo/sessions
-      - ./.home/:/home/odoo # This directory is used for keeping the bash/psql history
+      # mount home dir
+      - ./.home/.bash_history:/home/odoo/.bash_history
   kwkhtmltopdf:
     image: acsone/kwkhtmltopdf
     networks:
