@@ -5,19 +5,22 @@ FROM akraphrock14.0 as base
 # share the same odoo/src/requirements.txt
 # install odoo requirements first
 
-COPY ./src/setup.py ./src/setup/ /odoo/src/
+RUN mkdir -p /odoo/src/odoo/addons
 
-#COPY ./src/setup /odoo/src/setup
+COPY ./src/setup /odoo/src/setup
+COPY ./src/setup.py /odoo/src/setup.py
 
-
-#COPY ./src/odoo/cli /odoo/src/odoo/cli
-#COPY ./src/odoo/conf /odoo/src/odoo/conf
-#COPY ./src/odoo/tools /odoo/src/odoo/tools
-#COPY ./src/odoo/service /odoo/src/odoo/service
-#COPY ./src/odoo/*.py /odoo/src/odoo/
-#COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
-# COPY ./src/odoo/release.py /odoo/src/odoo/release.py
-#RUN rm -rf /odoo/src/addons && pip install -e /odoo/src/
+COPY ./src/odoo/*.py /odoo/src/odoo/
+COPY ./src/odoo/cli /odoo/src/odoo/cli
+COPY ./src/odoo/conf /odoo/src/odoo/conf
+COPY ./src/odoo/modules /odoo/src/odoo/modules
+COPY ./src/odoo/osv /odoo/src/odoo/osv
+COPY ./src/odoo/release.py /odoo/src/odoo/release.py
+COPY ./src/odoo/service /odoo/src/odoo/service
+COPY ./src/odoo/tests /odoo/src/odoo/tests
+COPY ./src/odoo/tools /odoo/src/odoo/tools
+COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
+RUN /odoo/bin/pip install -e /odoo/src
 
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt

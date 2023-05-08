@@ -4,7 +4,7 @@ networks:
   local:
 services:
   db:
-    image: postgres/postgres:15
+    image: postgres:15
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_DB=db
@@ -21,10 +21,10 @@ services:
     image: ${PROJECT_NAME}
     # cache_from: ${PROJECT_NAME} # main branch
     environment:
-      PGDATABASE: db
-      PGHOST: db
-      PGPASSWORD: odoo
-      PGUSER: odoo
+      DB_USER: odoo
+      DB_HOST: db
+      DB_PASSWORD: odoo
+      DB_NAME: odoo
       LIST_DB: "True"
       DB_FILTER: .*
       WITHOUT_DEMO: "False"
