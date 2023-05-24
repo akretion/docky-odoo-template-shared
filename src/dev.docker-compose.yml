@@ -8,7 +8,7 @@ services:
     user: $UID:$GID
     environment:
       - POSTGRES_USER=odoo
-      - POSTGRES_DB=db
+      - POSTGRES_DB=odoo
       - POSTGRES_PASSWORD=odoo
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
@@ -73,7 +73,7 @@ services:
       - ./data/filestore:/data/odoo/filestore
       - ./data/sessions:/data/odoo/sessions
       # mount home dir
-      - ./.home/.bash_history:/home/odoo/.bash_history
+      # - ./.home/.bash_history:/home/odoo/.bash_history
   kwkhtmltopdf:
     image: acsone/kwkhtmltopdf
     networks:
