@@ -5,6 +5,7 @@ networks:
 services:
   db:
     image: postgres:15
+    user: $UID:$GID
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_DB=db
