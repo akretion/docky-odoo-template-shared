@@ -20,12 +20,13 @@ COPY ./src/odoo/service /odoo/src/odoo/service
 COPY ./src/odoo/tests /odoo/src/odoo/tests
 COPY ./src/odoo/tools /odoo/src/odoo/tools
 COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
-RUN /odoo/bin/pip install -e /odoo/src
+RUN -x\
+  /odoo/bin/pip install -e /odoo/src
 
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt
-RUN \
-  pip install --no-cache-dir \
+RUN -x\
+  /odoo/bin/pip install --no-cache-dir \
     -r /odoo/requirements.txt \
     -f https://wheelhouse.acsone.eu/manylinux2014
 
@@ -38,11 +39,10 @@ FROM thisproject as dev
 
 # allow to pip install anything temporary
 COPY ./dev_requirements.txt /odoo/dev_requirements.txt
-RUN \
-  pip install --no-cache-dir \
+RUN -x\
+  /odoo/bin/pip install --no-cache-dir \
     -r /odoo/dev_requirements.txt \
     -f https://wheelhouse.acsone.eu/manylinux2014
-RUN chmod 777 -R /odoo/lib /odoo/bin
 
 FROM thisproject as prod
 
