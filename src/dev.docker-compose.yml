@@ -62,6 +62,13 @@ services:
       - ./odoo/links:/odoo/links
       - ./odoo/local-src:/odoo/local-src
       - ./odoo/src:/odoo/src
+      # mount directly files in order to preserve odoo.egg-info
+      # otherwise it has to be pip install -e at runtime
+      - ./odoo/src/addons:/odoo/src/addons
+      - ./odoo/src/odoo:/odoo/src/odoo
+      - ./odoo/src/setup.py:/odoo/src/setup.py
+      - ./odoo/src/setup.cfg:/odoo/src/setup.cfg
+      - ./odoo/src/requirements.txt:/odoo/src/requirements.txt
       # data
       - ./data/addons:/data/odoo/addons
       - ./data/filestore:/data/odoo/filestore
