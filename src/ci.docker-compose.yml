@@ -1,26 +1,50 @@
+#age1h8qrqg2cx4e054ywqsgcx8ej7lh7wwa0tf9me5x4sd3unq5asv5szay2uh
 services:
+  db:
+    image: postgres:15
+    user: $UID:$GID
+    environment:
+      - POSTGRES_DB=${CI_PROJECT_NAME}
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_USER=odoo
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - .db/data:/var/lib/postgresql/data
+      - /etc/passwd:/etc/passwd:ro
+    networks:
+      - local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U odoo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   odoo:
     build:
       context: ./odoo
       target: prod
     image: "${BUILD_NAME}"
     environment:
-      ODOO_BASE_URL: https://${DOMAIN}
-      ODOO_REPORT_URL: http://${ENV}-${BUILD_NAME}:8069
-      #SENTRY: True TODO FIXME
-      PGSSLMODE: require
-      PGDATABASE: $DB_NAME
-      PGHOST: $PGHOST
-      PGPASSWORD: $PGPASSWORD
-      PGUSER: $PGUSER
-      # TODO discuss if we want/need to have a "ci" running env
-      RUNNING_ENV: preprod
+      - ODOO_BASE_URL=https://${DOMAIN}
+      - SENTRY=False
+      - DB_NAME=${CI_PROJECT_NAME}
+      # ${CI_PROJECT_NAME}
+      - PGDATABASE=${CI_PROJECT_NAME}
+      - DB_USER=odoo
+      - PGUSER=odoo
+      - DB_HOST=db
+      - PGHOST=db
+      - POSTGRES_PASSWORD=odoo
+      - DB_PASSWORD=odoo
+      # NO SSL while in local
+      - PGSSLMODE=prefer
+      - ODOO_REPORT_URL=https://${DOMAIN}
+      - WORKERS=2
+      - MAX_CRON_THREADS=1
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=false"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) &&
-        PathPrefix(`/longpolling/`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) && PathPrefix(`/longpolling/`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.tls=false"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}odoo"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.service=${COMPOSE_PROJECT_NAME}odoo_long"
@@ -30,18 +54,20 @@ services:
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=${COMPOSE_PROJECT_NAME}middle"
     networks:
       - traefik
+      - local
     volumes:
       - type: tmpfs
         target: /data/odoo
       - type: volume
         source: filestore
         target: /data/odoo/filestore
-      - type: bind
-        source: ./shared
-        target: /shared
+    depends_on:
+        db:
+          condition: service_healthy
 volumes:
   filestore:
 networks:
   traefik:
     external: true
+  local:
 version: "3.7"

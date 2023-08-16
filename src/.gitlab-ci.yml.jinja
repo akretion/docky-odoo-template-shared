@@ -1,243 +1,422 @@
-# Variables to be set on group / project in gitlab variables:
+# MAJOR branches (14.0, 14, main, next)
+# Minor branches: all the others
 
-# CI_DOMAIN
-# CI_TOOLS_REPOSITORY_URL
-# SENTRY_DSN
+# major branches are protected (on gitlab)
+# major branches are cached
+# minor branches are derived from major branches
 
 workflow:
-  # Only run the pipeline if this is the default branch or a MR
+  # Remember: gitlab stop rule evaluation at first match
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: $CI_COMMIT_TAG
+      # don't run on git tag
+      when: never
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED == "true"'
+      # we assume it's a merge request event
+      # we don't handle merge request on a not protected branch
+      # because we can't know from which cache we should start of 
       variables:
-        PIPELINE_NAME: "MR pipeline: $CI_COMMIT_BRANCH"
-        IS_MR: "true"
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+        AK_IS_MR: "true"
+        AK_BASE_CACHE_DIR: ${CI_PROJECT_NAME}_preprod-${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}
+        # target in working dir allow us to update cache
+        # when source in mr (=target branch) is changed
+        # ex: MR is created with source=14 (default) then changed to source=16 
+        AK_WORKING_DIR: ${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}_${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}
+    - if: $CI_COMMIT_REF_PROTECTED == "true"
       variables:
-        PIPELINE_NAME: "default branch pipeline: $CI_COMMIT_BRANCH"
-    - if: $CI_COMMIT_BRANCH == "{{ odoo_version }}"
-      variables:
-        PIPELINE_NAME: "{{ odoo_version }} branch pipeline: $CI_COMMIT_BRANCH"
+        AK_IS_MAJOR_BRANCH: "true"
+        AK_WORKING_DIR: ${CI_PROJECT_NAME}_preprod-${CI_COMMIT_BRANCH}
 
 stages:
   - maintenance
-  - lint
   - build
-  - test
   - refresh
   - migrate
+  - test
   - review
   - stop_review
   - review_preprod
-  - docker_push
+  - deploy
   # - sentry
 
 before_script:
-  - export DOCKER_BUILDKIT=1
-  - cp .env-ci .env
-  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod}
+  # TODO: manage mulitple preprod ?
+  # ref-commit slug ?
+  - echo $AK_WORKING_DIR
+  - echo $AK_BASE_CACHE_DIR
+  - echo $AK_IS_MR
+  - echo $AK_IS_MAJOR_BRANCH
+  - echo $CI_COMMIT_REF_PROTECTED
+  - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
+  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-16}
   - export CI_DOMAIN=${CI_DOMAIN}
-  - |
-    cat << EOF >> .env
-    UID=`id -u`
-    BUILD_NAME=${BUILD_NAME}
-    DOMAIN=${BUILD_NAME}.${CI_DOMAIN}
-    COMPOSE_PROJECT_NAME=${BUILD_NAME}
-    PGDATABASE=\${PGDATABASE:-$BUILD_NAME}
-    ENCRYPTION_KEY_PREPROD=${ENCRYPTION_KEY_PREPROD}
-    ODOO_REPORT_URL=http://$BUILD_NAME:8069
-    EOF
-  - mkdir shared
-  {% if use_secret %}
-  - sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
-  {% endif %}
+  - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
 
-# Pre-commit lint
-lint:
-  stage: lint
+
+prebuild:
+  # warmup caches once per MR
+  stage: maintenance
   script:
-    - pre-commit install
-    - pre-commit run --all --show-diff-on-failure --verbose --color always
+    # exit early if cache dir exists
+    - test -d ~gitlab-runner/builds/${AK_WORKING_DIR} && exit 0
+    # create a cache dir in ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - git worktree add --detach ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
 
-lint-optional:
-  stage: lint
-  script:
-    - cp .pylintrc .pylintrc-mandatory
-    - git add .pylintrc-mandatory && git commit -m'tmp update mandatory'
-    - pre-commit install
-    - pre-commit run --all --show-diff-on-failure --verbose --color always
-  allow_failure: True
+    # exit early if there is no cache to derive
+    - test -d ~gitlab-runner/builds/${AK_BASE_CACHE_DIR} || exit 1 # Missing base dir
 
-# Build the container
+    # intialize caches (external-src, src, database and file store)
+    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/src odoo/src
+    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/external-src odoo/external-src
+    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/.db .db
+
+
 build:
   stage: build
   script:
-    - docker-compose build --pull
+    # ak build then docker build
 
-test:
-  stage: test
-  script:
-    - echo "DB_NAME=${BUILD_NAME}_test" >> .env
-    - export PGDATABASE="${BUILD_NAME}_test"
-    - docker-compose kill
-    - dropdb --force --if-exists ${BUILD_NAME}_test
-    - docker-compose run odoo initdb ${BUILD_NAME}_test --cache-prefix
-      ${CI_PROJECT_NAME:0:7}
-    - docker-compose run odoo runtests
-  rules:
-    # Run tests in MR if there is no Skiptest tag
-    - if: $IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
-    # Always run test in default branch
-    - if: $IS_MR == null
-  coverage: '/TOTAL(\W+\d+){5}\%/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: shared/coverage.xml
+    # update cache dir to good commit
+    - NEW_HEAD=`git rev-parse HEAD`
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - git checkout ${NEW_HEAD}
 
-# Drop the database to restart from a fresh one
-refresh_copy_db:
-  stage: refresh
-  script:
-    - docker-compose kill
-    - dropdb --force --if-exists $BUILD_NAME
-    - createdb $BUILD_NAME -T ${CI_PROJECT_NAME}_template
-  rules:
-    # if keepdb tag is set this job will not run
-    # if emptydb tag is set this job will not run
-    - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/ && $CI_MERGE_REQUEST_LABELS !~ /emptydb/
+    - cp .env-ci .env
+    # TODO use copier or something to inialize this env variables
+    - echo BUILD_NAME=${BUILD_NAME} >> .env
+    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
+    - echo "DOMAIN=${DOMAIN}" >> .env
+    # uid , gid used by docker in postgres to fix perms on .db
+    - echo "UID=`id -u`" >> .env
+    - echo "GID=`id -g`" >> .env
+    
+    
+    # ak build
+    - cd odoo && ak clone && ak sparse && ak build && cd ..
+    
+    # manage secrets
+    # run only if ci.secrets.docker-compose.yml exists
+    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
 
-refresh_empty_db:
-  stage: refresh
-  script:
-    - docker-compose kill
-    - dropdb --force --if-exists $BUILD_NAME
-    - createdb $BUILD_NAME || true
-  rules:
-    # if keepdb tag is set this job will not run
-    # if emptydb tag is set this job will run
-    - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/ && $CI_MERGE_REQUEST_LABELS =~ /emptydb/
+    # temp sentry release for ci use only
+    - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
+  needs: ["prebuild"]
 
-# Run the database changes (click-odoo-update or migrate marabunta)
+# Run the database changes (click-odoo-update)
 update_db:
   stage: migrate
   script:
-    - export PGDATABASE=$BUILD_NAME
-    - echo "DB_NAME=$BUILD_NAME" >> .env
-    - docker-compose kill
-    - docker-compose run odoo click-odoo-update
+    - echo ${BUILD_NAME}
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+
+    - docker compose down --remove-orphans
+    - docker compose run --rm odoo dropdb ${CI_PROJECT_NAME} 
+    # derive from template
+    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
+
+    # then click-odoo-update on it
+    - docker compose run --rm odoo click-odoo-update
   rules:
     # if emptydb tag is set this job will not run
     - if: $CI_MERGE_REQUEST_LABELS !~ /emptydb/
     # if keepdb is set, this job will run
     - if: $CI_MERGE_REQUEST_LABELS =~ /keepdb/
+  needs: [ "build" ]
 
-# Initialize the database (by installing a module)
-init_db:
-  stage: migrate
+test:
+  stage: test
   script:
-    - export PGDATABASE=$BUILD_NAME
-    - echo "DB_NAME=$BUILD_NAME" >> .env
-    - docker-compose kill
-    - docker-compose run odoo odoo -i base --stop-after-init
-    # advice: Instead of base, install a module that contains your dependencies
+    - CURRENT_PATH=`pwd`
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # get list of modules to test
+    # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
+
+    # TODO: réflechir si on laisse ça ici ou dans le conteneur
+    
+    - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
+    - echo $ADDONS_TEST
+    - docker compose run --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0 && coverage xml --skip-empty 
+    # extract coverage report
+    - docker compose cp odoo /data/odoo/filestore/coverage.xml coverage.xml
+    # move coverage report to accessible location from gitlab-ci
+    - cp coverage.xml ${CURRENT_PATH}/coverage.xml
   rules:
-    # if emptydb tag is set (and no keepdb) this job will run
-    - if: $CI_MERGE_REQUEST_LABELS =~ /emptydb/ && $CI_MERGE_REQUEST_LABELS !~ /keepdb/
+    # Run tests in MR if there is no Skiptest tag
+    - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
+  needs: [ "update_db" ]
+  allow_failure: true
+  coverage: '/TOTAL(\W+\d+){5}\%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+# # Initialize the database (by installing a module)
+# init_db:
+#   stage: migrate
+#   script:
+#     - export PGDATABASE=$BUILD_NAME
+#     - echo "DB_NAME=$BUILD_NAME" >> .env
+#     - docker compose kill
+#     - docker compose run odoo odoo -i base --stop-after-init
+#     # advice: Instead of base, install a module that contains your dependencies
+#   rules:
+#     # if emptydb tag is set (and no keepdb) this job will run
+#     - if: $CI_MERGE_REQUEST_LABELS =~ /emptydb/ && $CI_MERGE_REQUEST_LABELS !~ /keepdb/
 
 # Run the container used for the review
 review:
   stage: review
   script:
-    - echo "DB_NAME=$BUILD_NAME" >> .env
-    # TODO reimplement fetch mr env that do no depend on cidbservice
-    #- ci-fetch-mr-environment
-    #- source fetch-env.txt
-    #- export $(cut -d= -f1 fetch-env.txt)
-    - docker-compose kill
-    - docker-compose up -d
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - docker compose up -d
   environment:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
     url: https://${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}.${CI_DOMAIN}
     on_stop: stop_review
+  needs: 
+    - job: "update_db"
+      optional: true
   rules:
-    - if: $IS_MR == "true"
+    - if: $AK_IS_MR == "true"
 
 # Stop the container used for the review
 stop_review:
   stage: review
   script:
-    - docker-compose down --rmi local --volumes
-    - dropdb ${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID} --if-exist
-    - dropdb ${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}_test --if-exist
+    - CURRENT_PATH=`pwd` 
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - docker compose down --remove-orphans --volumes
+    - cd $CURRENT_PATH
+    - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - git worktree prune
   environment:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
     action: stop
   when: manual
   rules:
-    - if: $IS_MR == "true"
+    - if: $AK_IS_MR == "true"
 
-# Start the preprod container
+# # Start the preprod container
+# There is no on_stop here
 review_preprod:
   stage: review_preprod
   script:
     - echo "DB_NAME=$BUILD_NAME" >> .env
-    - echo "DOMAIN=${CI_PROJECT_NAME}_preprod.${CI_DOMAIN}" >> .env
-    - docker-compose kill
-    - docker-compose up -d
+    - echo "DOMAIN=${CI_PROJECT_NAME}_preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - docker compose up -d
   environment:
-    name: preprod
-    url: https://${CI_PROJECT_NAME}_preprod.${CI_DOMAIN}
+    name: preprod_${CI_COMMIT_BRANCH}
+    url: https://${CI_PROJECT_NAME}_preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}
   rules:
-    - if: $IS_MR == null
+    - if: $AK_IS_MR == null
+      # don't review preprod in branches
+      # no when:never because
+      # if there is 2 main branches, it's possible
+      # than one exists
+    - if: $AK_IS_MAJOR_BRANCH
 
-# Send the docker image to the registry in order to be downloaded in prod
-docker_push:
-  stage: docker_push
+prepare_release:
+  stage: deploy
   script:
-    - export TAG="${CI_COMMIT_MESSAGE//Bump version /}"
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_IMAGE:latest
-    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:$TAG
-    - docker push $CI_REGISTRY_IMAGE:$TAG
+    # Build tag but do not push on registry
+    # push is done manually in publish
+
+    # fetch latest tag from git
+    - LATEST_TAG=`git describe --tag`
+    # check validity of actual tag
+    - pysemver check ${LATEST_TAG:-undefined}
+    # increment version number
+    - VERSION=`pysemver bump patch $LATEST_TAG`
+    - echo "VERSION=${VERSION}" >> variables.env
   rules:
-    - if: $CI_COMMIT_TITLE =~ /^Bump version/ && $IS_MR == null
+    - if: $CI_COMMIT_TAG
+      # NOT in response of tag creation
+      # this job creates the tag
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      # NOT in merge request
+      when: never
+    - if: $AK_IS_MAJOR_BRANCH
+      # run on protected branches only
+  artifacts:
+    reports:
+      dotenv: variables.env
 
-# TODO rework on sentry maybe merge with bump ?
-#sentry:
-#  stage: sentry
-#  image:
-#    name: getsentry/sentry-cli
-#    entrypoint: [""]
-#  script:
-#    - env | grep SENTRY > sentry.env
-#    - docker run --env-file sentry.env getsentry/sentry-cli info
-#    - export PWD=`pwd`
-#    - echo $PWD
-#    - docker run --env-file sentry.env -v $PWD:/work  getsentry/sentry-cli releases new $CI_COMMIT_SHORT_SHA --finalize
-#    - docker run --env-file sentry.env -v $PWD:/work  getsentry/sentry-cli releases set-commits $CI_COMMIT_SHORT_SHA --auto
-#  rules:
-#    - if: $IS_MR == null
-#  needs:
-#    - docker_push
+release:
+  # creates a gitlab release
+  stage: deploy
+  script:
+    - CURRENT_PATH=`pwd` 
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/odoo
+    - ak freeze
+    # copy back in the initial dir the frozen.yaml
+    # in order to be found by artifact.path
+    - cp frozen.yaml $CURRENT_PATH/odoo
+    - cd ..
+    # rebuild with good version and the frozen in the image
+    - docker compose build --build-arg SENTRY_RELEASE=$VERSION
+    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
+    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
+  release:
+    tag_name: '${VERSION}'
+    description: 'release ${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}'
+    ref: '${CI_COMMIT_SHA}'
+  needs:
+    - job: prepare_release
+      artifacts: true
+  artifacts:
+    untracked: false
+    expose_as: 'frozen'
+    paths: ['odoo/frozen.yaml']
+    when: on_success
+  rules:
+    # same rules as publish
+    - if: $CI_COMMIT_TAG
+      # NOT in response of tag creation
+      # this job creates the tag
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      # NOT in merge request
+      when: never
+    - if: $AK_IS_MAJOR_BRANCH
+      # run on protected branches only
 
-# Delete the data associated with the stopped containers
-# Runs automatically every night
-prune_docker:
+publish:
+  # Publish docker image to docker registry
+  # do it manually to ensure tags are not cleaned up
+  # by the gitlab retention policy
+  # if you deploy more rarely than you merge
+  stage: deploy
+  script:
+    - CURRENT_PATH=`pwd` 
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # we expect to be on the last version of the code
+    # if you want to export an old image; add a new revert commit instead
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    # deriviate tag latest from CI_COMMIT_SHA if you want to deploy the not latest tag
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
+  when: manual
+  needs: ["release"]
+  rules:
+    # same rules as release
+    - if: $CI_COMMIT_TAG
+      # NOT in response of tag creation
+      # this job creates the tag
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      # NOT in merge request
+      when: never
+    - if: $AK_IS_MAJOR_BRANCH
+      # run on protected branches only
+
+generate_dump:
+  # utile lors d'une migration de dumper la ci
   stage: maintenance
   script:
-    - docker system prune --all --volumes --force
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+    - docker compose run --rm -T odoo pg_dump -d ${CI_PROJECT_NAME} > ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}.dump
+  when: manual
+
+init_source_cache:
+  stage: maintenance
+  script:
+    - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - git worktree add -f --detach ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+
+    # create cache directory before use
+    - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/odoo/external-src
+    - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/odoo/src
+    - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/.db
+    - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/data
+    - mkdir -p ~/builds/${AK_WORKING_DIR}/.db/data
+    # odoo'src is a bit different than external-src,
+    # because we git checkout on its first level (not in a subdir)
+    - cd odoo/src && git init && cd ..
+    # TODO: copy.env and init db
+    # build the project
+    - ak clone && ak build
   when: manual
   rules:
-    - if: $IS_MR == null
+    - if: $AK_IS_MAJOR_BRANCH
 
-# Start/Restart kwhtmltopdf
+rmcache:
+  stage: maintenance
+  script:
+    - docker compose down
+    - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - git worktree prune
+  when: manual
+  rules:
+    - if: $AK_IS_MR == "true"
+
+
+init_db:
+  stage: maintenance
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+    # manage secrets (sops)
+    # run only if ci.secrets.docker-compose.yml exists
+    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+
+    
+    # TODO: trouver un autre moyen de récuperer le dump ?
+    # ex: chiffre avec sops le .pgpass
+
+    - pg_dump -d ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}_template > ${CI_PROJECT_NAME}.dump
+    - docker compose down --remove-orphans
+
+    # force removal of .db/data if it exists
+    - rm -rf .db/data
+    - mkdir .db/data
+
+    # use odoo container to access db because, it honors depends_on
+    # (defined in docker compose), we just start from empty dir
+    # so it takes time to boot
+    # T is for TTY allocation
+
+    # create empty db for tests
+    - docker compose run --rm odoo createdb odoo
+
+    # ensure db template exists
+    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME}_template
+    # fill db template with data
+    - docker compose run --rm -T odoo psql -d ${CI_PROJECT_NAME}_template < ${CI_PROJECT_NAME}.dump
+    # CI_PROJECT_NAME may already exist because it's created
+    # at postgres startup
+    - docker compose run --rm -T odoo dropdb --if-exists ${CI_PROJECT_NAME} 
+    # derive db from template
+    - docker compose run --rm -T odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
+    - docker compose up -d # restart preprod
+  when: manual
+  rules:
+    - if: $AK_IS_MAJOR_BRANCH
+
+refresh_db:
+  # kind of new keepdb ?
+  # est-ce utile quand on a a migrate ?
+  stage: maintenance
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+    - docker compose down --remove-orphans
+    - rm -rf .db
+    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/.db .db
+  when: manual
+  rules:
+    - if: $AK_IS_MR == "true"
+
+# # Start/Restart kwhtmltopdf
 kwkhtmltopdf:
   stage: maintenance
   script:
-    - docker-compose -f kwkhtmltopdf-traefik.docker-compose.yml down
-    - docker-compose -f kwkhtmltopdf-traefik.docker-compose.yml up -d
+    - docker compose -f kwkhtmltopdf-traefik.docker compose.yml down
+    - docker compose -f kwkhtmltopdf-traefik.docker compose.yml up -d
   when: manual
   rules:
-    - if: $IS_MR == null
+    # TODO: only on default branch
+    # it's shared across all odoo major
+    - if: $AK_IS_MAJOR_BRANCH
