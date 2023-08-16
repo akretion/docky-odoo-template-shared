@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-FROM ghcr.io/akretion/odoo-docker:16.0-light-latest as base
+FROM ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest as base
 
 # There is a high chance that multiple projects
 # share the same odoo/src/requirements.txt
