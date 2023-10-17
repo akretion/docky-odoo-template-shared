@@ -9,6 +9,7 @@ _envops:
   keep_trailing_newline: true
   variable_end_string: "}}"
   variable_start_string: "{{"
+_answers_file: .copier-answers_shared.yml
 
 project_name:
   type: str
@@ -53,3 +54,5 @@ _skip_if_exists:
   - clear-ci.secrets.docker-compose.yml
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml
+  - .copier-answers_personnal.yml
+
