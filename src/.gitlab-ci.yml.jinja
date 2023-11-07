@@ -4,6 +4,17 @@
 # major branches are protected (on gitlab)
 # major branches are cached
 # minor branches are derived from major branches
+variables:
+  # To have prefiled variables, go to Build > Pipeline > Run pipeline
+  AK_TEMPLATE_DB:
+    description: "DB to work with. _template or _previous_version_template. Only used in init_db job"
+    value: ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}_preprod
+  AK_DO_OPENUPGRADE_MIGRATION:
+    description: "Do an openupgrade migration"
+    options:
+      - true
+      - false
+    values: false
 
 workflow:
   # Remember: gitlab stop rule evaluation at first match
@@ -56,12 +67,15 @@ before_script:
 prebuild:
   # warmup caches once per MR
   stage: maintenance
+  resource_group: semaphore
   script:
     # exit early if cache dir exists
     - test -d ~gitlab-runner/builds/${AK_WORKING_DIR} && exit 0
     # create a cache dir in ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - git worktree add --detach ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - REMOTE=`realpath --relative-base="$HOME" .`
+    - cd ~gitlab-runner/builds/
+    - git clone ~/$REMOTE ${AK_WORKING_DIR}
+    - cd ${AK_WORKING_DIR}
 
     # exit early if there is no cache to derive
     - test -d ~gitlab-runner/builds/${AK_BASE_CACHE_DIR} || exit 1 # Missing base dir
@@ -71,16 +85,61 @@ prebuild:
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/external-src odoo/external-src
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/.db .db
 
+fetch:
+  # run once per commit
+  # checkout the expected commit
+  resource_group: semaphore
+  stage: maintenance
+  script:
+    - REMOTE=`realpath --relative-base="$HOME" .`
+    - NEW_HEAD=`git rev-parse HEAD`
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # || true if the remote already exists
+    - git remote add --mirror=fetch $REMOTE ~/$REMOTE || true
+    - git fetch --all
+    - git checkout ${NEW_HEAD}
+  needs: ["prebuild"]
+
+build_openupgrade:
+  stage: build
+  script:
+    # refactore with build !
+    # ak build then docker build
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+
+    - cp .env-ci .env
+    # TODO use copier or something to inialize this env variables
+    - echo BUILD_NAME=${BUILD_NAME} >> .env
+    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
+    - echo "DOMAIN=${DOMAIN}" >> .env
+    # uid , gid used by docker in postgres to fix perms on .db
+    - echo "UID=`id -u`" >> .env
+    - echo "GID=`id -g`" >> .env
+
+    # ak build specific
+    - cd odoo
+    - cat spec.yaml spec-openupgrade.yaml > spec-migration.yaml
+    - ak build -c spec-migration.yaml
+    - cd ..
+
+    # add the load variable to docker compose
+    
+    # manage secrets
+    # run only if ci.secrets.docker-compose.yml exists
+    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+
+    # temp sentry release for ci use only
+    - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
+  rules:
+    # if emptydb tag is set this job will not run
+    - if: $AK_DO_OPENUPGRADE_MIGRATION
+  needs: ["fetch"]
 
 build:
   stage: build
   script:
     # ak build then docker build
-
-    # update cache dir to good commit
-    - NEW_HEAD=`git rev-parse HEAD`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - git checkout ${NEW_HEAD}
 
     - cp .env-ci .env
     # TODO use copier or something to inialize this env variables
@@ -101,7 +160,7 @@ build:
 
     # temp sentry release for ci use only
     - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
-  needs: ["prebuild"]
+  needs: ["fetch"]
 
 # Run the database changes (click-odoo-update)
 update_db:
@@ -116,7 +175,9 @@ update_db:
     - docker compose run --rm odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
 
     # then click-odoo-update on it
-    - docker compose run --rm odoo click-odoo-update
+    - AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
+    - AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
+
   rules:
     # if emptydb tag is set this job will not run
     - if: $CI_MERGE_REQUEST_LABELS !~ /emptydb/
@@ -190,7 +251,6 @@ stop_review:
     - docker compose down --remove-orphans --volumes
     - cd $CURRENT_PATH
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - git worktree prune
   environment:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
     action: stop
@@ -321,12 +381,27 @@ generate_dump:
     - docker compose run --rm -T odoo pg_dump -d ${CI_PROJECT_NAME} > ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}.dump
   when: manual
 
+
+
+major_migration:
+  # migration from the previous version
+  # todo: peut etre pas la peine de refaire un build
+  # a chaque fois ?
+  stage: migrate
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+    - docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
+  when: manual
+
 init_source_cache:
   stage: maintenance
   script:
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - git worktree add -f --detach ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # create a cache dir in ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - REMOTE=`realpath --relative-base="$HOME" .`
+    - cd ~gitlab-runner/builds/
+    - git clone ~/$REMOTE ${AK_WORKING_DIR}
+    - cd ${AK_WORKING_DIR}
 
     # create cache directory before use
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/odoo/external-src
@@ -349,11 +424,9 @@ rmcache:
   script:
     - docker compose down
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - git worktree prune
   when: manual
   rules:
     - if: $AK_IS_MR == "true"
-
 
 init_db:
   stage: maintenance
@@ -366,8 +439,8 @@ init_db:
     
     # TODO: trouver un autre moyen de récuperer le dump ?
     # ex: chiffre avec sops le .pgpass
-
-    - pg_dump -d ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}_template > ${CI_PROJECT_NAME}.dump
+    - echo "Base db ${AK_TEMPLATE_DB}"
+    - pg_dump -d ${AK_TEMPLATE_DB} > ${CI_PROJECT_NAME}.dump
     - docker compose down --remove-orphans
 
     # force removal of .db/data if it exists

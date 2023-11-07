@@ -1,7 +1,7 @@
 #age1h8qrqg2cx4e054ywqsgcx8ej7lh7wwa0tf9me5x4sd3unq5asv5szay2uh
 services:
   db:
-    image: postgres:15
+    image: postgres:16
     user: $UID:$GID
     environment:
       - POSTGRES_DB=${CI_PROJECT_NAME}
