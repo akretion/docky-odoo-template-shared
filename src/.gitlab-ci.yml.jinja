@@ -131,8 +131,7 @@ build_openupgrade:
     # temp sentry release for ci use only
     - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
   rules:
-    # if emptydb tag is set this job will not run
-    - if: $AK_DO_OPENUPGRADE_MIGRATION
+    - if: $AK_DO_OPENUPGRADE_MIGRATION == "true"
   needs: ["fetch"]
 
 build:
@@ -276,7 +275,7 @@ review_preprod:
       # no when:never because
       # if there is 2 main branches, it's possible
       # than one exists
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
 
 prepare_release:
   stage: deploy
@@ -341,7 +340,7 @@ release:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       # NOT in merge request
       when: never
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
       # run on protected branches only
 
 publish:
@@ -370,7 +369,7 @@ publish:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       # NOT in merge request
       when: never
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
       # run on protected branches only
 
 generate_dump:
@@ -417,7 +416,7 @@ init_source_cache:
     - ak clone && ak build
   when: manual
   rules:
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
 
 rmcache:
   stage: maintenance
@@ -467,7 +466,7 @@ init_db:
     - docker compose up -d # restart preprod
   when: manual
   rules:
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
 
 refresh_db:
   # kind of new keepdb ?
@@ -492,4 +491,4 @@ kwkhtmltopdf:
   rules:
     # TODO: only on default branch
     # it's shared across all odoo major
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
