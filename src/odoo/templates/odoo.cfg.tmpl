@@ -49,3 +49,13 @@ proxy_mode = True
 ; smtp_user = False
 unaccent = ${UNACCENT}
 ${ADDITIONAL_ODOO_RC}
+
+sentry_enabled = {{ default .Env.SENTRY "False" }}
+sentry_environment = {{ default .Env.RUNNING_ENV "dev" }}
+sentry_dsn = {{ default .Env.SENTRY_DSN "" }}
+sentry_release = {{ default .Env.SENTRY_RELEASE "" }}
+sentry_traces_sample_rate = {{ default .Env.SENTRY_TRACES_SAMPLE_RATE "0.0" }}
+
+encryption_key_dev={{ default .Env.ENCRYPTION_KEY_DEV "" }}
+encryption_key_ci={{ default .Env.ENCRYPTION_KEY_CI "" }}
+encryption_key_prod={{ default .Env.ENCRYPTION_KEY_PROD "" }}
