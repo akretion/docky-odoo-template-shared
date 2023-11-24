@@ -1,14 +1,20 @@
 odoo:
-   src: https://github.com/odoo/odoo {{ odoo_version }}
-
-queue:
-    modules:
-       - queue_job
-    src: https://github.com/oca/queue {{ odoo_version }}
+    src: https://github.com/odoo/odoo {{ odoo_version }}
 
 server-env:
     modules:
        - data_encryption
        - server_environment
        - server_environment_data_encryption
+    src: https://github.com/oca/server-env {{ odoo_version }}
+
+web:
+    modules:
+        - web_environment_ribbon
+    src: https://github.com/oca/web {{ odoo_version }}
+
+ak-odoo-incubator:
+    modules:
+        - database_age_cron
+        - auth_oidc_akretion
     src: https://github.com/oca/server-env {{ odoo_version }}

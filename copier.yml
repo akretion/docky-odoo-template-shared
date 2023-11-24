@@ -9,7 +9,10 @@ _envops:
   keep_trailing_newline: true
   variable_end_string: "}}"
   variable_start_string: "{{"
-_answers_file: .copier-answers_shared.yml
+
+# keep the default name
+# in order to let the user run `copier update -A`
+_answers_file: .copier-answers.yml
 
 project_name:
   type: str
@@ -18,6 +21,7 @@ project_name:
 odoo_version:
   type: float
   choices:
+     - 17.0
      - 16.0
      - 15.0
      - 14.0
@@ -28,9 +32,6 @@ odoo_version:
 use_secret:
   type: bool
   help: generate docker-compose dedicate file for secret
-
-# ak in the container ?
-# odoo-spec ?
 
 org_name:
   type: str
@@ -47,7 +48,6 @@ _skip_if_exists:
   - README.md # TODO how to manage readme ?
   - odoo/local-src/*
   - odoo/spec.yaml
-  - odoo/odoo-spec.yaml
   - odoo/requirements.txt
   - odoo/setup.py
   - clear-ci-db-token # To be removed
