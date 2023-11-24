@@ -12,9 +12,9 @@ variables:
   AK_DO_OPENUPGRADE_MIGRATION:
     description: "Do an openupgrade migration"
     options:
-      - true
-      - false
-    values: false
+      - "true"
+      - "false"
+    value: "false"
 
 workflow:
   # Remember: gitlab stop rule evaluation at first match
@@ -175,8 +175,8 @@ update_db:
     - docker compose run --rm odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
 
     # then click-odoo-update on it
-    - AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
-    - AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
+    - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
+    - $AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
 
   rules:
     # if emptydb tag is set this job will not run
