@@ -318,6 +318,7 @@ release:
     # rebuild with good version and the frozen in the image
     - docker compose build --build-arg SENTRY_RELEASE=$VERSION
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
+    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
   release:
     tag_name: '${VERSION}'
@@ -356,10 +357,14 @@ publish:
     # if you want to export an old image; add a new revert commit instead
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     # deriviate tag latest from CI_COMMIT_SHA if you want to deploy the not latest tag
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
   when: manual
-  needs: ["release"]
+  needs:
+    - job: prepare_release
+      artifacts: true
+    - job: release
   rules:
     # same rules as release
     - if: $CI_COMMIT_TAG

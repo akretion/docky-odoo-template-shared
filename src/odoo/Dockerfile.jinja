@@ -30,7 +30,7 @@ RUN /odoo/bin/pip install --no-cache-dir \
 
 ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links
 
-#COPY ./templates /odoo/templates
+COPY ./templates /odoo/templates
 
 
 FROM thisproject as dev
