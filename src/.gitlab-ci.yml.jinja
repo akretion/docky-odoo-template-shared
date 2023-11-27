@@ -282,7 +282,8 @@ prepare_release:
   script:
     # Build tag but do not push on registry
     # push is done manually in publish
-
+    # force fetch tags (especially in fetch startegy)
+    - git fetch --tags
     # fetch latest tag from git
     - LATEST_TAG=`git describe --abbrev=0 --tags`
     # check validity of actual tag
