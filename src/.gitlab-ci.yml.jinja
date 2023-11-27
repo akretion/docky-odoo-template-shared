@@ -175,7 +175,7 @@ update_db:
 
     # then click-odoo-update on it
     - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
-    - $AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
+    - ($AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init) || true
 
   rules:
     # if emptydb tag is set this job will not run
