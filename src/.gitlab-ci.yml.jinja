@@ -421,7 +421,9 @@ init_source_cache:
 rmcache:
   stage: maintenance
   script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose down
+    - cd ..
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
   when: manual
   rules:

@@ -33,7 +33,7 @@ services:
       - PGUSER=odoo
       - DB_HOST=db
       - PGHOST=db
-      - POSTGRES_PASSWORD=odoo
+      - PGPASSWORD=odoo
       - DB_PASSWORD=odoo
       # NO SSL while in local
       - PGSSLMODE=prefer
