@@ -284,7 +284,7 @@ prepare_release:
     # push is done manually in publish
 
     # fetch latest tag from git
-    - LATEST_TAG=`git describe --tag`
+    - LATEST_TAG=`git describe --abbrev=0 --tags`
     # check validity of actual tag
     - pysemver check ${LATEST_TAG:-undefined}
     # increment version number
