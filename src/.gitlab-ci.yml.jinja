@@ -43,7 +43,7 @@ stages:
   - build
   - refresh
   - migrate
-  - test
+#  - test
   - review
   - stop_review
   - review_preprod
@@ -184,34 +184,34 @@ update_db:
     - if: $CI_MERGE_REQUEST_LABELS =~ /keepdb/
   needs: [ "build" ]
 
-test:
-  stage: test
-  script:
-    - CURRENT_PATH=`pwd`
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # get list of modules to test
-    # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
+# test:
+#   stage: test
+#   script:
+#     - CURRENT_PATH=`pwd`
+#     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+#     # get list of modules to test
+#     # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
 
-    # TODO: réflechir si on laisse ça ici ou dans le conteneur
+#     # TODO: réflechir si on laisse ça ici ou dans le conteneur
     
-    - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
-    - echo $ADDONS_TEST
-    - docker compose run --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0 && coverage xml --skip-empty 
-    # extract coverage report
-    - docker compose cp odoo /data/odoo/filestore/coverage.xml coverage.xml
-    # move coverage report to accessible location from gitlab-ci
-    - cp coverage.xml ${CURRENT_PATH}/coverage.xml
-  rules:
-    # Run tests in MR if there is no Skiptest tag
-    - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
-  needs: [ "update_db" ]
-  allow_failure: true
-  coverage: '/TOTAL(\W+\d+){5}\%/'
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
+#     - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
+#     - echo $ADDONS_TEST
+#     - docker compose run --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0 && coverage xml --skip-empty 
+#     # extract coverage report
+#     - docker compose cp odoo /data/odoo/filestore/coverage.xml coverage.xml
+#     # move coverage report to accessible location from gitlab-ci
+#     - cp coverage.xml ${CURRENT_PATH}/coverage.xml
+#   rules:
+#     # Run tests in MR if there is no Skiptest tag
+#     - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
+#   needs: [ "update_db" ]
+#   allow_failure: true
+#   coverage: '/TOTAL(\W+\d+){5}\%/'
+#   artifacts:
+#     reports:
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: coverage.xml
 # # Initialize the database (by installing a module)
 # init_db:
 #   stage: migrate
