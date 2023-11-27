@@ -298,7 +298,7 @@ prepare_release:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       # NOT in merge request
       when: never
-    - if: $AK_IS_MAJOR_BRANCH
+    - if: $AK_IS_MAJOR_BRANCH == "true"
       # run on protected branches only
   artifacts:
     reports:
@@ -429,7 +429,7 @@ rmcache:
   rules:
     - if: $AK_IS_MR == "true"
 
-init_db:
+refresh_db_in_major:
   stage: maintenance
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
@@ -470,7 +470,20 @@ init_db:
   rules:
     - if: $AK_IS_MAJOR_BRANCH == "true"
 
-refresh_db:
+init_empty_db:
+  stage: maintenance
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+
+    # fill db template with a empty db
+    - docker compose stop odoo
+    - docker compose run --rm odoo odoo -d ${CI_PROJECT_NAME}_template -i base --stop-after-init
+    - docker compose up -d # restart preprod
+  when: manual
+  rules:
+    - if: $AK_IS_MAJOR_BRANCH == "true"
+
+refresh_db_in_branch:
   # kind of new keepdb ?
   # est-ce utile quand on a a migrate ?
   stage: maintenance
