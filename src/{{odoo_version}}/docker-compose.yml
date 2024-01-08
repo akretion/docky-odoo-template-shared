@@ -26,6 +26,7 @@ services:
       # SENTRY_DSN=
       RUNNING_ENV: $ENV
       UNACCENT: "True"
+      PYTHONDONTWRITEBYTECODE: 1
     hostname: ${ENV}-${COMPOSE_PROJECT_NAME}
     labels:
       docky.main.service: true
