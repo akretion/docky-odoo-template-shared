@@ -18,7 +18,7 @@ project_name:
   type: str
   help: Project Name
 
-odoo_version:
+branch_name:
   type: float
   choices:
      - 17.0
@@ -27,6 +27,10 @@ odoo_version:
      - 14.0
   default: 16.0
   help: Odoo version
+
+odoo_version:
+  default: {{branch_name}}
+  when: false
 
 # Remove ?
 use_secret:
@@ -42,6 +46,25 @@ org_name:
   # do not ask the question
   # but allow to change it manually
   when: false
+
+next_templates:
+  help: "Next templates to run. template path args"
+  # syntax:
+  #   one template per line
+  #   src_path dest_path
+  # data= is the answer of the curent template
+  # really fragile structure
+  # keep the empty line between each
+  # lines
+  # this syntax allows variable extrapolation
+  # because the result is a string
+  # tmpl_path if local is relative to dstDir
+  default: >
+    https://github.com/akretion/docky-odoo-template-personnal.git .
+
+    https://github.com/OCA/oca-addons-repo-template.git /odoo/local-src
+  when: false
+
 
 _skip_if_exists:
   - frozen.yaml
