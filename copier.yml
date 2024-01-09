@@ -19,17 +19,20 @@ project_name:
   help: Project Name
 
 branch_name:
-  type: float
+  type: str
   choices:
-     - 17.0
-     - 16.0
-     - 15.0
-     - 14.0
-  default: 16.0
+     - "17.0"
+     - "16.0"
+     - "15.0"
+     - "14.0"
+  default: "16.0"
   help: Odoo version
 
 odoo_version:
-  default: {{branch_name}}
+  # odoo_version is more readable
+  # branch_name is required by huddle, more generic
+  type: str
+  default: "{{branch_name}}"
   when: false
 
 # Remove ?
