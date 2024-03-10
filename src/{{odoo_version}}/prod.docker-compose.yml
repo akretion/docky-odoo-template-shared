@@ -14,7 +14,15 @@ services:
       PGHOST: $PGHOST
       PGPASSWORD: $PGPASSWORD
       PGUSER: $PGUSER
+      # use pgbouncer
       PGPORT: $PGPORT
+      # dont use pgbouncer for BUS_ALT_CON
+      IMDISPATCHER_DB_PORT: 5432
+      IMDISPATCHER_DB_HOST: $PGHOST
+      # don't use pgbouncer for queuejob
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST: $PGHOST
+
       LOG_LEVEL: warn
       ODOO_BASE_URL: TODO
       PGSSLMODE: require
