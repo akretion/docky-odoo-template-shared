@@ -67,7 +67,7 @@ next_templates:
 
     https://github.com/OCA/oca-addons-repo-template.git ./odoo/local-src
   when: false
-
+# replace next_templates by tasks when copier will be able to make the diff between update and copy in tasks
 # _tasks:
 #   - test {{_copier_conf.dst_path}} = . && copier copy --data project_name={{ project_name }} --data branch_name={{branch_name}} --data suffix_domain=localhost file:///home/raph/dev/docky-odoo-template_personnal/.git {{branch_name}}/ || true
 #   - test {{_copier_conf.dst_path}} = . && copier copy --trust --data odoo_version={{ odoo_version }} --data repo_name={{ project_name }} --data org_slug=akretion --data org_name=akretion --data repo_slug=akretion --data repo_website=https://akretion.com --data repo_description="some project" --data ci=GitHub --data odoo_test_flavor=Odoo --data use_pyproject_toml=yes --data generate_requirements_txt=no --data use_ruff=yes --data github_enable_codecov=yes --data additional_ruff_rules=[] --data rebel_module_groups=[] --data include_wkhtmltopdf=no --data github_enforce_dev_status_compatibility=no --data github_check_license=no  --data github_enable_makepot=no --data github_enable_stale_action=no --data github_ci_extra_env={} --data convert_readme_fragments_to_markdown=no https://github.com/OCA/oca-addons-repo-template.git {{branch_name}}/odoo/local-src || true

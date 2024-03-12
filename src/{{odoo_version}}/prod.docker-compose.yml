@@ -1,3 +1,4 @@
+# You have check all TODO
 networks:
   local:
 services:
@@ -8,7 +9,8 @@ services:
       - local
   odoo:
     restart: always
-    image: TODO
+    # TODO
+    image: registry.gitlab.akretion.com/akretion/${project_name}:16-0_latest
     environment:
       PGDATABASE: $DB_NAME
       PGHOST: $PGHOST
@@ -23,11 +25,18 @@ services:
       ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
       ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST: $PGHOST
 
-      LOG_LEVEL: warn
-      ODOO_BASE_URL: TODO
+      # TODO
+      ODOO_BASE_URL: https://${project_name}.akretion.com
       PGSSLMODE: require
       RUNNING_ENV: prod
-      SENTRY: True
+
+      SENTRY: False
+      LOG_LEVEL: warn
+      SENTRY_TRACES_SAMPLE_RATE: 0.00001
+      # TODO
+      # SENTRY_DSN:
+      # sentry and bus_alt_connection don't require installation
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
     volumes:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons
       - ~/data/${COMPOSE_PROJECT_NAME}/filestore:/data/odoo/filestore
