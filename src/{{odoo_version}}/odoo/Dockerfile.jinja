@@ -28,7 +28,7 @@ RUN /odoo/bin/pip install --no-cache-dir \
     -r /odoo/requirements.txt \
     -f https://wheelhouse.acsone.eu/manylinux2014
 
-ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links
+ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links,/odoo/local-src
 
 COPY ./templates /odoo/templates
 

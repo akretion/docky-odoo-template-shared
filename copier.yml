@@ -82,7 +82,6 @@ _skip_if_exists:
   - odoo/spec.yaml
   - odoo/requirements.txt
   - odoo/setup.py
-  - clear-ci-db-token # To be removed
   - clear-ci.secrets.docker-compose.yml
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml
