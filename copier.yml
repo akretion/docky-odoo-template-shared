@@ -1,6 +1,6 @@
 # Configure jinja2 defaults to make syntax highlighters happy
 _templates_suffix: .jinja
-_subdirectory: src/{{odoo_version}}
+_subdirectory: src/
 _envops:
   block_end_string: "%}"
   block_start_string: "{%"
