@@ -5,4 +5,4 @@
 /clear-*
 .home
 *.~lock*  # libreoffice may generate these files while opening file
-/.copier-answers_personnal.yml
+/.copier-answers-personal.yml
