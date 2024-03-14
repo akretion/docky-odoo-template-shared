@@ -12,18 +12,21 @@ services:
     # TODO
     image: registry.gitlab.akretion.com/akretion/${project_name}:16-0_latest
     environment:
-      PGDATABASE: $DB_NAME
-      PGHOST: $PGHOST
-      PGPASSWORD: $PGPASSWORD
-      PGUSER: $PGUSER
+      DB_NAME: 
+      PGDATABASE: 
+      DB_HOST: 
+      PGHOST: 
+      PGUSER:
+      DB_USER:
       # use pgbouncer
-      PGPORT: $PGPORT
+      DB_PORT: 6432
+      PGPORT: 6432
       # dont use pgbouncer for BUS_ALT_CON
       IMDISPATCHER_DB_PORT: 5432
-      IMDISPATCHER_DB_HOST: $PGHOST
+      IMDISPATCHER_DB_HOST:
       # don't use pgbouncer for queuejob
       ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
-      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST: $PGHOST
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST:
 
       # TODO
       ODOO_BASE_URL: https://${project_name}.akretion.com

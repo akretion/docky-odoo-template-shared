@@ -8,13 +8,36 @@ server-env:
        - server_environment_data_encryption
     src: https://github.com/oca/server-env {{ odoo_version }}
 
+server-tools:
+    modules:
+       - sentry
+#      - bus_alt_connection
+    src: https://github.com/oca/server-tools {{ odoo_version }}
+
+server-tools-bus-alt-connection:
+    modules:
+        - bus_alt_connection
+    src: https://github.com/Studio73/server-tools 16.0-mig_bus_alt_connection
+#        https://github.com/OCA/server-tools/pull/2829
+
 web:
     modules:
         - web_environment_ribbon
     src: https://github.com/oca/web {{ odoo_version }}
 
+server-auth:
+    modules:
+        - auth_oidc
+    src: https://github.com/oca/server-auth {{ odoo_version }}
+
 ak-odoo-incubator:
     modules:
-        - database_age_cron
-        - auth_oidc_akretion
+        - database_age_cron # 14.0
+        - attachment_asset_in_db # 14.0
+#        - auth_oidc_akretion_data # 14.0-add-auth_oidc_akretion_data
     src: https://github.com/oca/server-env {{ odoo_version }}
+
+ak-odoo-incubator-oidc_ak_data:
+    modules:
+        - auth_oidc_akretion_data
+    src: https://github.com/akretion/ak-odoo-incubator 14.0-add-auth_oidc_akretion_data

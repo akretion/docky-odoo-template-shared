@@ -8,7 +8,7 @@ variables:
   # To have prefiled variables, go to Build > Pipeline > Run pipeline
   AK_TEMPLATE_DB:
     description: "DB to work with. _template or _previous_version_template. Only used in init_db job"
-    value: ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}_preprod
+    value: ${CI_PROJECT_NAME}_template
   AK_DO_OPENUPGRADE_MIGRATION:
     description: "Do an openupgrade migration"
     options:
@@ -59,7 +59,7 @@ before_script:
   - echo $AK_IS_MAJOR_BRANCH
   - echo $CI_COMMIT_REF_PROTECTED
   - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
-  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-16}
+  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-16-0}
   - export CI_DOMAIN=${CI_DOMAIN}
   - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
 
@@ -285,7 +285,8 @@ prepare_release:
     # force fetch tags (especially in fetch startegy)
     - git fetch --tags
     # fetch latest tag from git
-    - LATEST_TAG=`git describe --abbrev=0 --tags`
+    # fallback to 0.0.0 if no tags exists yet
+    - LATEST_TAG=`git describe --abbrev=0 --tags || echo 0.0.0`
     # check validity of actual tag
     - pysemver check ${LATEST_TAG:-undefined}
     # increment version number
@@ -309,7 +310,7 @@ release:
   # creates a gitlab release
   stage: deploy
   script:
-    - CURRENT_PATH=`pwd` 
+    - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/odoo
     - ak freeze
     # copy back in the initial dir the frozen.yaml
@@ -435,7 +436,9 @@ rmcache:
   rules:
     - if: $AK_IS_MR == "true"
 
-refresh_db_in_major:
+
+fetch_db_in_major:
+  # get db from remote server like pgci
   stage: maintenance
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
@@ -448,8 +451,18 @@ refresh_db_in_major:
     # ex: chiffre avec sops le .pgpass
     - echo "Base db ${AK_TEMPLATE_DB}"
     - pg_dump -d ${AK_TEMPLATE_DB} > ${CI_PROJECT_NAME}.dump
-    - docker compose down --remove-orphans
+  when: manual
+  rules:
+    - if: $AK_IS_MAJOR_BRANCH == "true"
 
+init_db_dump_in_major:
+  stage: maintenance
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
+    # ensure a dump is present in the directory
+    - test -f ${CI_PROJECT_NAME}.dump
+
+    - docker compose down --remove-orphans
     # force removal of .db/data if it exists
     - rm -rf .db/data
     - mkdir .db/data
@@ -476,13 +489,14 @@ refresh_db_in_major:
   rules:
     - if: $AK_IS_MAJOR_BRANCH == "true"
 
-init_empty_db:
+init_empty_db_in_major:
   stage: maintenance
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-
     # fill db template with a empty db
-    - docker compose stop odoo
+
+    # or true because we may not running
+    - docker compose stop odoo || true
     - docker compose run --rm odoo odoo -d ${CI_PROJECT_NAME}_template -i base --stop-after-init
     - docker compose up -d # restart preprod
   when: manual
