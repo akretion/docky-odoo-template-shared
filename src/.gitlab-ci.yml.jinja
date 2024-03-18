@@ -169,7 +169,7 @@ update_db:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
 
     - docker compose down --remove-orphans
-    - docker compose run --rm odoo dropdb ${CI_PROJECT_NAME} 
+    - docker compose run --rm odoo dropdb --if-exists ${CI_PROJECT_NAME} 
     # derive from template
     - docker compose run --rm odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
 
@@ -178,10 +178,8 @@ update_db:
     - ($AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init) || true
 
   rules:
-    # if emptydb tag is set this job will not run
-    - if: $CI_MERGE_REQUEST_LABELS !~ /emptydb/
-    # if keepdb is set, this job will run
-    - if: $CI_MERGE_REQUEST_LABELS =~ /keepdb/
+    # if keepdb is set, this job will not run
+    - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/
   needs: [ "build" ]
 
 # test:
@@ -212,6 +210,7 @@ update_db:
 #       coverage_report:
 #         coverage_format: cobertura
 #         path: coverage.xml
+
 # # Initialize the database (by installing a module)
 # init_db:
 #   stage: migrate
@@ -235,8 +234,10 @@ review:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
     url: https://${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}.${CI_DOMAIN}
     on_stop: stop_review
-  needs: 
+  needs:
     - job: "update_db"
+      optional: true
+    - job: "build"
       optional: true
   rules:
     - if: $AK_IS_MR == "true"
@@ -280,17 +281,29 @@ review_preprod:
 prepare_release:
   stage: deploy
   script:
+    # here we stay in the gitlab runner's directory
     # Build tag but do not push on registry
     # push is done manually in publish
     # force fetch tags (especially in fetch startegy)
     - git fetch --tags
     # fetch latest tag from git
-    # fallback to 0.0.0 if no tags exists yet
-    - LATEST_TAG=`git describe --abbrev=0 --tags || echo 0.0.0`
+    # it's a bit tricky here, because some may have tagged
+    # none or multiple time the same commit
+    - LATEST_CANDIDATE=`git describe --abbrev=0 --tags`
+    - echo $LATEST_CANDIDATE
+    # if there is multiple tags on the same commit, keep the last one
+    # sort -V gives 16.0.9 before 16.0.10
+    # tail -n 1 gives the last line
+    - LATEST_TAG=`git tag --points-at $LATEST_CANDIDATE | sort -V | tail -n 1`
+    # current version is latest tag or commit branch name (ie 16.0)
+    # for the moment branch name should follow semver
+    # name like "master" or "next" are not supported
+    - CURRENT_VERSION=${LATEST_TAG:-${CI_COMMIT_BRANCH}.0}
     # check validity of actual tag
-    - pysemver check ${LATEST_TAG:-undefined}
+    - pysemver check $CURRENT_VERSION
     # increment version number
-    - VERSION=`pysemver bump patch $LATEST_TAG`
+    - VERSION=`pysemver bump patch $CURRENT_VERSION`
+    - echo $VERSION
     - echo "VERSION=${VERSION}" >> variables.env
   rules:
     - if: $CI_COMMIT_TAG
@@ -437,8 +450,9 @@ rmcache:
     - if: $AK_IS_MR == "true"
 
 
-fetch_db_in_major:
+refresh_db_template:
   # get db from remote server like pgci
+  # and load into the pg in docker
   stage: maintenance
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
@@ -451,9 +465,18 @@ fetch_db_in_major:
     # ex: chiffre avec sops le .pgpass
     - echo "Base db ${AK_TEMPLATE_DB}"
     - pg_dump -d ${AK_TEMPLATE_DB} > ${CI_PROJECT_NAME}.dump
+
+    # now load the template
+    # dropdb if possible
+    - docker compose run --rm odoo dropdb --if-exists ${CI_PROJECT_NAME}_template
+    # ensure db template exists
+    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME}_template
+    # import dump
+    - docker compose run --rm -T odoo psql -d ${CI_PROJECT_NAME}_template < ${CI_PROJECT_NAME}.dump
   when: manual
   rules:
     - if: $AK_IS_MAJOR_BRANCH == "true"
+
 
 init_db_dump_in_major:
   stage: maintenance
@@ -481,7 +504,7 @@ init_db_dump_in_major:
     - docker compose run --rm -T odoo psql -d ${CI_PROJECT_NAME}_template < ${CI_PROJECT_NAME}.dump
     # CI_PROJECT_NAME may already exist because it's created
     # at postgres startup
-    - docker compose run --rm -T odoo dropdb --if-exists ${CI_PROJECT_NAME} 
+    - docker compose run --rm -T odoo dropdb --if-exists ${CI_PROJECT_NAME}
     # derive db from template
     - docker compose run --rm -T odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
     - docker compose up -d # restart preprod
