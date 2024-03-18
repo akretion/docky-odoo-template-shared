@@ -42,9 +42,10 @@ RUN /odoo/bin/pip install --no-cache-dir \
     -f https://wheelhouse.acsone.eu/manylinux2014
 
 FROM thisproject as prod
-
+ARG SENTRY_RELEASE=0.0.0
 COPY ./src /odoo/src
 RUN /odoo/bin/pip install -e /odoo/src
 COPY ./external-src /odoo/external-src
 COPY ./links /odoo/links
 COPY ./local-src /odoo/local-src
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
