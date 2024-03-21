@@ -281,6 +281,7 @@ review_preprod:
 prepare_release:
   stage: deploy
   script:
+    # goal of this step is to compute the next version
     # here we stay in the gitlab runner's directory
     # Build tag but do not push on registry
     # push is done manually in publish
@@ -319,7 +320,7 @@ prepare_release:
     reports:
       dotenv: variables.env
 
-release:
+publish:
   # creates a gitlab release
   stage: deploy
   script:
@@ -335,6 +336,12 @@ release:
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
+
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    # deriviate tag latest from CI_COMMIT_SHA if you want to deploy the not latest tag
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
+    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
   release:
     tag_name: '${VERSION}'
     description: 'release ${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}'
@@ -347,41 +354,9 @@ release:
     expose_as: 'frozen'
     paths: ['odoo/frozen.yaml']
     when: on_success
+  when: manual
   rules:
     # same rules as publish
-    - if: $CI_COMMIT_TAG
-      # NOT in response of tag creation
-      # this job creates the tag
-      when: never
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      # NOT in merge request
-      when: never
-    - if: $AK_IS_MAJOR_BRANCH == "true"
-      # run on protected branches only
-
-publish:
-  # Publish docker image to docker registry
-  # do it manually to ensure tags are not cleaned up
-  # by the gitlab retention policy
-  # if you deploy more rarely than you merge
-  stage: deploy
-  script:
-    - CURRENT_PATH=`pwd` 
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # we expect to be on the last version of the code
-    # if you want to export an old image; add a new revert commit instead
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-    # deriviate tag latest from CI_COMMIT_SHA if you want to deploy the not latest tag
-    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
-    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
-    - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
-  when: manual
-  needs:
-    - job: prepare_release
-      artifacts: true
-    - job: release
-  rules:
-    # same rules as release
     - if: $CI_COMMIT_TAG
       # NOT in response of tag creation
       # this job creates the tag
@@ -398,18 +373,6 @@ generate_dump:
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
     - docker compose run --rm -T odoo pg_dump -d ${CI_PROJECT_NAME} > ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}.dump
-  when: manual
-
-
-
-major_migration:
-  # migration from the previous version
-  # todo: peut etre pas la peine de refaire un build
-  # a chaque fois ?
-  stage: migrate
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    - docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init
   when: manual
 
 init_source_cache:
