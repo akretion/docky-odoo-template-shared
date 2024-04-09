@@ -391,11 +391,9 @@ init_source_cache:
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/.db
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/data
     - mkdir -p ~/builds/${AK_WORKING_DIR}/.db/data
-    # odoo'src is a bit different than external-src,
-    # because we git checkout on its first level (not in a subdir)
-    - cd odoo/src && git init && cd ..
-    # TODO: copy.env and init db
+
     # build the project
+    - cd odoo
     - ak clone && ak build
   when: manual
   rules:
