@@ -9,6 +9,8 @@ _envops:
   keep_trailing_newline: true
   variable_end_string: "}}"
   variable_start_string: "{{"
+#used by pylint
+preserve_symlinks: true
 
 # keep the default name
 # in order to let the user run `copier update -A`
