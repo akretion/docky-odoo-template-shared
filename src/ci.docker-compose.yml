@@ -1,23 +1,5 @@
 #age1h8qrqg2cx4e054ywqsgcx8ej7lh7wwa0tf9me5x4sd3unq5asv5szay2uh
 services:
-  db:
-    image: postgres:16
-    user: $UID:$GID
-    environment:
-      - POSTGRES_DB=${CI_PROJECT_NAME}
-      - POSTGRES_PASSWORD=odoo
-      - POSTGRES_USER=odoo
-      - PGDATA=/var/lib/postgresql/data
-    volumes:
-      - .db/data:/var/lib/postgresql/data
-      - /etc/passwd:/etc/passwd:ro
-    networks:
-      - local
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U odoo"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
   odoo:
     build:
       context: ./odoo
@@ -26,17 +8,17 @@ services:
     environment:
       - ODOO_BASE_URL=https://${DOMAIN}
       - SENTRY=False
+      - PGSSLMODE=require
       - DB_NAME=${CI_PROJECT_NAME}
-      # ${CI_PROJECT_NAME}
       - PGDATABASE=${CI_PROJECT_NAME}
-      - DB_USER=odoo
-      - PGUSER=odoo
-      - DB_HOST=db
-      - PGHOST=db
-      - PGPASSWORD=odoo
-      - DB_PASSWORD=odoo
+      - DB_NAME=${BUILD_NAME}
+      - PGDATABASE=${BUILD_NAME}
+      - DB_USER=${CI_PROJECT_NAME}
+      - PGUSER=${CI_PROJECT_NAME}
+      - DB_HOST=
+      - PGHOST=
+
       # NO SSL while in local
-      - PGSSLMODE=prefer
       - ODOO_REPORT_URL=https://${DOMAIN}
       - WORKERS=2
       - MAX_CRON_THREADS=1
