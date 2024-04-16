@@ -81,10 +81,9 @@ prebuild:
     # exit early if there is no cache to derive
     - test -d ~gitlab-runner/builds/${AK_BASE_CACHE_DIR} || exit 1 # Missing base dir
 
-    # intialize caches (external-src, src, database and file store)
+    # intialize caches (external-src, src and file store)
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/src odoo/src
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/external-src odoo/external-src
-    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/.db .db
 
 fetch:
   # run once per commit
@@ -169,10 +168,10 @@ update_db:
     - echo ${BUILD_NAME}
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
 
-    - docker compose down --remove-orphans
-    - docker compose run --rm odoo dropdb --if-exists ${CI_PROJECT_NAME} 
-    # derive from template
-    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
+    # work on remote db
+    - docker compose stop
+    - dropdb --force --if-exists $BUILD_NAME
+    - createdb $BUILD_NAME -T ${AK_TEMPLATE_DB}
 
     # then click-odoo-update on it
     - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
@@ -359,13 +358,6 @@ publish:
     - if: $AK_IS_MAJOR_BRANCH == "true"
       # run on protected branches only
 
-generate_dump:
-  # utile lors d'une migration de dumper la ci
-  stage: maintenance
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    - docker compose run --rm -T odoo pg_dump -d ${CI_PROJECT_NAME} > ${CI_PROJECT_NAME}-${CI_COMMIT_BRANCH}.dump
-  when: manual
 
 init_source_cache:
   stage: maintenance
@@ -380,9 +372,7 @@ init_source_cache:
     # create cache directory before use
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/odoo/external-src
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/odoo/src
-    - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/.db
     - btrfs subvolume create ~/builds/${AK_WORKING_DIR}/data
-    - mkdir -p ~/builds/${AK_WORKING_DIR}/.db/data
 
     # build the project
     - cd odoo
@@ -398,96 +388,6 @@ rmcache:
     - docker compose down
     - cd ..
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
-  when: manual
-  rules:
-    - if: $AK_IS_MR == "true"
-
-
-refresh_db_template:
-  # get db from remote server like pgci
-  # and load into the pg in docker
-  stage: maintenance
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    # manage secrets (sops)
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
-
-    
-    # TODO: trouver un autre moyen de récuperer le dump ?
-    # ex: chiffre avec sops le .pgpass
-    - echo "Base db ${AK_TEMPLATE_DB}"
-    - pg_dump -d ${AK_TEMPLATE_DB} > ${CI_PROJECT_NAME}.dump
-
-    # now load the template
-    # dropdb if possible
-    - docker compose run --rm odoo dropdb --if-exists ${CI_PROJECT_NAME}_template
-    # ensure db template exists
-    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME}_template
-    # import dump
-    - docker compose run --rm -T odoo psql -d ${CI_PROJECT_NAME}_template < ${CI_PROJECT_NAME}.dump
-  when: manual
-  rules:
-    - if: $AK_IS_MAJOR_BRANCH == "true"
-
-
-init_db_dump_in_major:
-  stage: maintenance
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    # ensure a dump is present in the directory
-    - test -f ${CI_PROJECT_NAME}.dump
-
-    - docker compose down --remove-orphans
-    # force removal of .db/data if it exists
-    - rm -rf .db/data
-    - mkdir .db/data
-
-    # use odoo container to access db because, it honors depends_on
-    # (defined in docker compose), we just start from empty dir
-    # so it takes time to boot
-    # T is for TTY allocation
-
-    # create empty db for tests
-    - docker compose run --rm odoo createdb odoo
-
-    # ensure db template exists
-    - docker compose run --rm odoo createdb ${CI_PROJECT_NAME}_template
-    # fill db template with data
-    - docker compose run --rm -T odoo psql -d ${CI_PROJECT_NAME}_template < ${CI_PROJECT_NAME}.dump
-    # CI_PROJECT_NAME may already exist because it's created
-    # at postgres startup
-    - docker compose run --rm -T odoo dropdb --if-exists ${CI_PROJECT_NAME}
-    # derive db from template
-    - docker compose run --rm -T odoo createdb ${CI_PROJECT_NAME} -T ${CI_PROJECT_NAME}_template
-    - docker compose up -d # restart preprod
-  when: manual
-  rules:
-    - if: $AK_IS_MAJOR_BRANCH == "true"
-
-init_empty_db_in_major:
-  stage: maintenance
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    # fill db template with a empty db
-
-    # or true because we may not running
-    - docker compose stop odoo || true
-    - docker compose run --rm odoo odoo -d ${CI_PROJECT_NAME}_template -i base --stop-after-init
-    - docker compose up -d # restart preprod
-  when: manual
-  rules:
-    - if: $AK_IS_MAJOR_BRANCH == "true"
-
-refresh_db_in_branch:
-  # kind of new keepdb ?
-  # est-ce utile quand on a a migrate ?
-  stage: maintenance
-  script:
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/
-    - docker compose down --remove-orphans
-    - rm -rf .db
-    - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/.db .db
   when: manual
   rules:
     - if: $AK_IS_MR == "true"
