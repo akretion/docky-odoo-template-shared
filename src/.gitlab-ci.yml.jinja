@@ -25,13 +25,13 @@ workflow:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED == "true"'
       # we assume it's a merge request event
       # we don't handle merge request on a not protected branch
-      # because we can't know from which cache we should start of 
+      # because we can't know from which cache we should start of
       variables:
         AK_IS_MR: "true"
         AK_BASE_CACHE_DIR: ${CI_PROJECT_NAME}_preprod-${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}
         # target in working dir allow us to update cache
         # when source in mr (=target branch) is changed
-        # ex: MR is created with source=14 (default) then changed to source=16 
+        # ex: MR is created with source=14 (default) then changed to source=16
         AK_WORKING_DIR: ${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}_${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}
     - if: $CI_COMMIT_REF_PROTECTED == "true"
       variables:
@@ -43,12 +43,14 @@ stages:
   - build
   - refresh
   - migrate
-#  - test
   - review
   - stop_review
   - review_preprod
   - deploy
-  # - sentry
+  # quality is at the end
+  # because usually it's only
+  # needed before the merge
+  - quality
 
 before_script:
   # TODO: manage mulitple preprod ?
@@ -63,7 +65,6 @@ before_script:
   - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
   - export CI_DOMAIN=${CI_DOMAIN}
   - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
-
 
 prebuild:
   # warmup caches once per MR
@@ -123,7 +124,7 @@ build_openupgrade:
     - cd ..
 
     # add the load variable to docker compose
-    
+
     # manage secrets
     # run only if ci.secrets.docker-compose.yml exists
     - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
@@ -148,11 +149,10 @@ build:
     # uid , gid used by docker in postgres to fix perms on .db
     - echo "UID=`id -u`" >> .env
     - echo "GID=`id -g`" >> .env
-    
-    
+
     # ak build
     - cd odoo && ak clone && ak sparse && ak build && cd ..
-    
+
     # manage secrets
     # run only if ci.secrets.docker-compose.yml exists
     - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
@@ -180,7 +180,25 @@ update_db:
   rules:
     # if keepdb is set, this job will not run
     - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/
-  needs: [ "build" ]
+  needs: ["build"]
+
+
+lint:
+  stage: quality
+  script:
+    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR 
+    - cd odoo/local-src
+    # but we want to use cache
+    - export RUFF_CACHE_DIR=${AK_WORKING_DIR}
+    # run pre-commit only on files in this directory
+    # because it's config is tailored for odoo files
+    - git ls-files -- . | xargs pre-commit run --files
+  rules:
+    # only in merge requests
+    - if: $AK_IS_MR == "true"
+  # can be run sooner
+  needs: ["fetch"]
+
 
 # test:
 #   stage: test
@@ -246,7 +264,7 @@ review:
 stop_review:
   stage: review
   script:
-    - CURRENT_PATH=`pwd` 
+    - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose down --remove-orphans --volumes
     - cd $CURRENT_PATH
@@ -334,16 +352,16 @@ publish:
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
   release:
-    tag_name: '${VERSION}'
-    description: 'release ${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}'
-    ref: '${CI_COMMIT_SHA}'
+    tag_name: "${VERSION}"
+    description: "release ${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}"
+    ref: "${CI_COMMIT_SHA}"
   needs:
     - job: prepare_release
       artifacts: true
   artifacts:
     untracked: false
-    expose_as: 'frozen'
-    paths: ['odoo/frozen.yaml']
+    expose_as: "frozen"
+    paths: ["odoo/frozen.yaml"]
     when: on_success
   when: manual
   rules:
