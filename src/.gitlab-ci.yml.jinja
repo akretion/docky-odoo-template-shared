@@ -59,7 +59,8 @@ before_script:
   - echo $AK_IS_MAJOR_BRANCH
   - echo $CI_COMMIT_REF_PROTECTED
   - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
-  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-16-0}
+  - echo $CI_COMMIT_REF_SLUG
+  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
   - export CI_DOMAIN=${CI_DOMAIN}
   - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
 
@@ -277,6 +278,11 @@ review_preprod:
       # if there is 2 main branches, it's possible
       # than one exists
     - if: $AK_IS_MAJOR_BRANCH == "true"
+  needs:
+    - job: "update_db"
+      optional: true
+    - job: "build"
+      optional: true
 
 prepare_release:
   stage: deploy
@@ -285,25 +291,9 @@ prepare_release:
     # here we stay in the gitlab runner's directory
     # Build tag but do not push on registry
     # push is done manually in publish
-    # force fetch tags (especially in fetch startegy)
-    - git fetch --tags
-    # fetch latest tag from git
-    # it's a bit tricky here, because some may have tagged
-    # none or multiple time the same commit
-    - LATEST_CANDIDATE=`git describe --abbrev=0 --tags`
-    - echo $LATEST_CANDIDATE
-    # if there is multiple tags on the same commit, keep the last one
-    # sort -V gives 16.0.9 before 16.0.10
-    # tail -n 1 gives the last line
-    - LATEST_TAG=`git tag --points-at $LATEST_CANDIDATE | sort -V | tail -n 1`
-    # current version is latest tag or commit branch name (ie 16.0)
-    # for the moment branch name should follow semver
-    # name like "master" or "next" are not supported
-    - CURRENT_VERSION=${LATEST_TAG:-${CI_COMMIT_BRANCH}.0}
-    # check validity of actual tag
-    - pysemver check $CURRENT_VERSION
+    - LAST_TAG=$(./bin/last_git_tag.sh ${CI_COMMIT_BRANCH}.0)
     # increment version number
-    - VERSION=`pysemver bump patch $CURRENT_VERSION`
+    - VERSION=$(pysemver bump patch $LAST_TAG)
     - echo $VERSION
     - echo "VERSION=${VERSION}" >> variables.env
   rules:
@@ -319,6 +309,8 @@ prepare_release:
   artifacts:
     reports:
       dotenv: variables.env
+  needs:
+    - build
 
 publish:
   # creates a gitlab release

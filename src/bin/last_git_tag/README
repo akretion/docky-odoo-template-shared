@@ -1,0 +1,15 @@
+How to run tests
+
+
+Create a virtualenv (opt)
+```sh
+$ python3 -m venv venv
+$ source venv/bin/activate
+```
+
+Install requirements
+`pip install -r test-requirements.txt`
+
+
+Run tests
+`pytest tests.py`
