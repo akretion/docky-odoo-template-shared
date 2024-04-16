@@ -43,9 +43,6 @@ services:
       - type: volume
         source: filestore
         target: /data/odoo/filestore
-    depends_on:
-        db:
-          condition: service_healthy
 volumes:
   filestore:
 networks:
