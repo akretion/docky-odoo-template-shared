@@ -50,7 +50,7 @@ stages:
   # quality is at the end
   # because usually it's only
   # needed before the merge
-  - quality
+  - test
 
 before_script:
   # TODO: manage mulitple preprod ?
@@ -166,6 +166,7 @@ update_db:
   stage: migrate
   script:
     - echo ${BUILD_NAME}
+    - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
 
     # work on remote db
@@ -173,18 +174,48 @@ update_db:
     - dropdb --force --if-exists $BUILD_NAME
     - createdb $BUILD_NAME -T ${AK_TEMPLATE_DB}
 
-    # then click-odoo-update on it
+    # get list of modules before
+    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt
+
     - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
     - ($AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init) || true
-
+    # get list of modules after
+    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt
+    
+    # --no-index allow us to compare two untracked files
+    # here we just want a easy to read diff
+    # no-index before output
+    # || true because git diff return 1 if there is some changes
+    - git diff --no-index --output modules_changed.diff --color -- modules_before.txt modules_after.txt || true
+    - git diff --no-index --output modules_changed_nocolor.diff --no-color -- modules_before.txt modules_after.txt  || true
+    - cat modules_changed.diff
+    - cp modules_changed.diff $CURRENT_PATH/odoo
   rules:
     # if keepdb is set, this job will not run
     - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/
   needs: ["build"]
+  artifacts:
+    paths: ["odoo/modules_changed.diff"]
 
+quality:
+  stage: test
+  script:
+    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR 
+    - cd odoo/local-src
+    # but we want to use cache
+    - export RUFF_CACHE_DIR=${AK_WORKING_DIR}
+    # run pre-commit only on files in this directory
+    # because it's config is tailored for odoo files
+    - ruff check  --output-format=gitlab > ../../gl-code-quality-report.json || true
+  artifacts:
+#    paths: [gl-code-quality-report.json]
+    reports:
+      codequality: gl-code-quality-report.json
+  # can be run sooner
+  needs: ["fetch"]
 
 lint:
-  stage: quality
+  stage: test
   script:
     # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR 
     - cd odoo/local-src
@@ -200,34 +231,52 @@ lint:
   needs: ["fetch"]
 
 
-# test:
-#   stage: test
-#   script:
-#     - CURRENT_PATH=`pwd`
-#     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-#     # get list of modules to test
-#     # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
+test:
+  stage: test
+  script:
+    - CURRENT_PATH=`pwd`
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # get list of modules to test
+    # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
+    # qu'est ce que ça fait ça ?
+    #- docker compose run odoo initdb ${DB_NAME} --cache-prefix ${CI_PROJECT_NAME:0:7}
+    # TODO: réflechir si on laisse ça ici ou dans le conteneur
 
-#     # TODO: réflechir si on laisse ça ici ou dans le conteneur
-    
-#     - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
-#     - echo $ADDONS_TEST
-#     - docker compose run --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0 && coverage xml --skip-empty 
-#     # extract coverage report
-#     - docker compose cp odoo /data/odoo/filestore/coverage.xml coverage.xml
-#     # move coverage report to accessible location from gitlab-ci
-#     - cp coverage.xml ${CURRENT_PATH}/coverage.xml
-#   rules:
-#     # Run tests in MR if there is no Skiptest tag
-#     - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
-#   needs: [ "update_db" ]
-#   allow_failure: true
-#   coverage: '/TOTAL(\W+\d+){5}\%/'
-#   artifacts:
-#     reports:
-#       coverage_report:
-#         coverage_format: cobertura
-#         path: coverage.xml
+    # list of all local-src modules
+    - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
+    - ADDONS_TEST_DEP=$(manifestoo --select-addons-dir odoo/local-src list-depends --separator=,)
+    - echo $ADDONS_TEST
+    - echo $ADDONS_TEST_DEP
+    # start from a clean state
+    - dropdb --force --if-exists ${BUILD_NAME}_test
+    # init db with dependencies of our modules
+    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
+    # run the tests here
+    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
+    # display report in MR
+    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage report
+    # export for the artifacts
+    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage xml --skip-empty
+    # extract coverage report
+    - docker compose cp odoo:/data/odoo/filestore/coverage.xml coverage.xml
+    # move coverage report to accessible location from gitlab-ci
+    - cp coverage.xml ${CURRENT_PATH}/coverage.xml
+  rules:
+    # Run tests in MR if there is no Skiptest tag
+    - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
+  needs:
+      # update_db do a docker compose stop, we don't want to be halted
+      # if this job start sooner
+      # optional true, let us the ability to run if update_db is cancelled
+    - job: "update_db"
+      optional: true
+  allow_failure: true
+  coverage: '/TOTAL(\W+\d+){5}\%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
 
 # # Initialize the database (by installing a module)
 # init_db:
@@ -313,6 +362,7 @@ prepare_release:
     - VERSION=$(pysemver bump patch $LAST_TAG)
     - echo $VERSION
     - echo "VERSION=${VERSION}" >> variables.env
+   
   rules:
     - if: $CI_COMMIT_TAG
       # NOT in response of tag creation
@@ -335,11 +385,14 @@ publish:
   script:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/odoo
-    - ak freeze
-    # copy back in the initial dir the frozen.yaml
-    # in order to be found by artifact.path
-    - cp frozen.yaml $CURRENT_PATH/odoo
+    # touch: ak freeze to fail
+    # for instance it may exists some issue with
+    # reference to closed PR and stuff like that 
+    # here we output in CURRENT_PATH to not mess
+    # the AK_WORKING_DIR with an untracked frozen
+    - ak freeze -o $CURRENT_PATH/odoo/frozen.yaml || touch $CURRENT_PATH/odoo/frozen.yaml
     - cd ..
+
     # rebuild with good version and the frozen in the image
     - docker compose build --build-arg SENTRY_RELEASE=$VERSION
     - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
@@ -351,9 +404,29 @@ publish:
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_$VERSION
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
+
+    # ensure modules changed exist
+    - touch modules_changed_nocolor.diff modules_changed.diff
+    # todo: get this from artifact instead of local cache
+    # display it
+    - cat modules_changed.diff
+    - mv modules_changed.diff $CURRENT_PATH/odoo/
+
+    # generate a readme for the release
+    # ensure file exist (generated in update_db)
+    # if update_db is skiped this can provide wrong
+    # results; colors are added by the markdown
+    - touch modules_changed_nocolor.diff
+    # mind the simples quotes
+    - echo '# Release' > release.md
+    - echo "" >> release.md
+    - echo '```diff' >> release.md
+    - cat modules_changed_nocolor.diff >> release.md
+    - echo '```' >> release.md
+    - cp release.md $CURRENT_PATH/release.md
   release:
     tag_name: "${VERSION}"
-    description: "release ${CI_COMMIT_REF_SLUG}_${CI_COMMIT_SHA}"
+    description: "release.md"
     ref: "${CI_COMMIT_SHA}"
   needs:
     - job: prepare_release
@@ -361,7 +434,7 @@ publish:
   artifacts:
     untracked: false
     expose_as: "frozen"
-    paths: ["odoo/frozen.yaml"]
+    paths: ["odoo/frozen.yaml", "odoo/modules_changed.diff"]
     when: on_success
   when: manual
   rules:
