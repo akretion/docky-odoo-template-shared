@@ -1,0 +1,66 @@
+From  Mon Sep 17 00:00:00 2001
+From: hparfr <raphael.reverdy@akretion.com>
+Date: Fri, 3 May 2024 15:40:56 +0200
+Subject: [PATCH] example: migrate from custom
+
+---
+ some_module/__init__.py      |  1 +
+ some_module/__manifest__.py  |  1 +
+ some_module/pre_init_hook.py | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 30 insertions(+)
+ create mode 100644 some_module/pre_init_hook.py
+
+diff --git a/some_module/__init__.py b/some_module/__init__.py
+index 0650744..32c9c51 100644
+--- a/some_module/__init__.py
++++ b/some_module/__init__.py
+@@ -1 +1,2 @@
+ from . import models
++from .pre_init_hook import pre_init_hook
+diff --git a/some_module/__manifest__.py b/some_module/__manifest__.py
+index 379d203..68d04b5 100644
+--- a/some_module/__manifest__.py
++++ b/some_module/__manifest__.py
+@@ -10,6 +10,7 @@
+     "author": "Akretion",
+     "maintainers": ["hparfr"],
+     "application": True,
++    "pre_init_hook": "pre_init_hook",
+     "license": "AGPL-3",
+     "depends": [
+         "stock",
+diff --git a/some_module/pre_init_hook.py b/some_module/pre_init_hook.py
+new file mode 100644
+index 0000000..6574b71
+--- /dev/null
++++ b/some_module/pre_init_hook.py
+@@ -0,0 +1,28 @@
++from openupgradelib import openupgrade
++
++""" Encode any known changes to the database here
++to help the matching process
++"""
++
++# Renamed modules is a mapping from old module name to new module name
++renamed_modules = {
++    "custom_module_x": "some_module",
++    "custom_module_x_shopinvader": "shopinvader_some_module",
++}
++
++# Merged modules contain a mapping from old module names to other,
++# preexisting module names
++merged_modules = {
++    "custom_module_x_anotherone": "some_module",
++}
++
++
++def pre_init_hook(cr):
++
+     # if this script is run from a pre-init-hook, merge_modules=True
+     # if it's run from odoo shell, merge_modules=False (for the first line)
+     # because during the pre-init-hook, the new module is already installed
++    openupgrade.update_module_names(cr, renamed_modules.items(), merge_modules=True)
++    openupgrade.update_module_names(cr, merged_modules.items(), merge_modules=True)
+-- 
+2.43.2
+
