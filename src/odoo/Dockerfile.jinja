@@ -30,6 +30,8 @@ RUN /odoo/bin/pip install --no-cache-dir \
 
 ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links,/odoo/local-src
 
+COPY ./start-entrypoint.d /odoo/start-entrypoint.d
+COPY ./scripts /odoo/scripts
 COPY ./templates /odoo/templates
 
 

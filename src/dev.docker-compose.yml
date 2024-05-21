@@ -58,6 +58,8 @@ services:
     volumes:
       # do not mount /odoo directly
       # we want to preserve /odoo/venv
+      - ./odoo/start-entrypoint.d:/odoo/start-entrypoint.d
+      - ./odoo/scripts:/odoo/scripts
       - ./odoo/external-src:/odoo/external-src
       - ./odoo/links:/odoo/links
       - ./odoo/local-src:/odoo/local-src
