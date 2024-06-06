@@ -86,6 +86,32 @@ prebuild:
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/src odoo/src
     - btrfs subvolume snapshot ~gitlab-runner/builds/${AK_BASE_CACHE_DIR}/odoo/external-src odoo/external-src
 
+pregetdb:
+  # ensure spare are presents
+  stage: maintenance
+  script:
+    # no need to wait for a build
+    # can be run from anywhere
+    # manage secrets
+    # run only if ci.secrets.docker-compose.yml exists
+    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+
+    # TODO: factorise this:
+    - cp .env-ci .env
+    # TODO use copier or something to inialize this env variables
+    - echo BUILD_NAME=${BUILD_NAME} >> .env
+    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
+    - echo "DOMAIN=${DOMAIN}" >> .env
+    # uid , gid used by docker in postgres to fix perms on .db
+    - echo "UID=`id -u`" >> .env
+    - echo "GID=`id -g`" >> .env
+
+    # create spare db, --detach allow the runner to continue
+    # we don't need to build the project for that
+    # -- profile allow us to run only this container
+    - docker compose --profile db run --detach bedrock /odoo/create_spares.sh
+    # always run
+
 fetch:
   # run once per commit
   # checkout the expected commit
@@ -150,12 +176,13 @@ build:
     - echo "UID=`id -u`" >> .env
     - echo "GID=`id -g`" >> .env
 
-    # ak build
-    - cd odoo && ak clone && ak sparse && ak build && cd ..
-
     # manage secrets
     # run only if ci.secrets.docker-compose.yml exists
     - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+
+    # ak build
+    - cd odoo && ak clone && ak sparse && ak build && cd ..
+
 
     # temp sentry release for ci use only
     - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
@@ -169,16 +196,18 @@ update_db:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
 
-    # work on remote db
+    # first stop odoo to quit all db connexions
     - docker compose stop
-    - dropdb --force --if-exists $BUILD_NAME
-    - createdb $BUILD_NAME -T ${AK_TEMPLATE_DB}
+    # drop db if needed
+    - docker compose --profile db run bedrock dropdb --force --if-exists $BUILD_NAME
+    - docker compose --profile db run bedrock odoo/get_db.sh
 
     # get list of modules before
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt
 
     - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
     - ($AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init) || true
+
     # get list of modules after
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt
     
@@ -249,14 +278,15 @@ test:
     - echo $ADDONS_TEST_DEP
     # start from a clean state
     - dropdb --force --if-exists ${BUILD_NAME}_test
+    # --labels traefik.enable=false in order to not mess with the review
     # init db with dependencies of our modules
-    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
+    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
     # run the tests here
-    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
+    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
     # display report in MR
-    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage report
+    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage report
     # export for the artifacts
-    - docker compose run -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage xml --skip-empty
+    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage xml --skip-empty
     # extract coverage report
     - docker compose cp odoo:/data/odoo/filestore/coverage.xml coverage.xml
     # move coverage report to accessible location from gitlab-ci
