@@ -12,10 +12,31 @@ services:
     # TODO
     image: registry.gitlab.akretion.com/akretion/${project_name}:16-0_latest
     environment:
+      # add and change your settings here
+
+      SENTRY: False
+      SENTRY_DSN:
+      LOG_LEVEL: warn
+      SENTRY_TRACES_SAMPLE_RATE: 0.00001
+
+      ODOO_BASE_URL: https://${project_name}.akretion.com
+
+      LIMIT_TIME_CPU: 240
+      LIMIT_TIME_REAL: 480
+      LIMIT_TIME_REAL_CRON: 480
+
+      # 1500Mb *1024² (Small projects)
+      LIMIT_MEMORY_SOFT: 1572864000
+
+      RUNNING_ENV: prod
+
+      # don't change after this line
+      # ask infra team for the following
+      PGSSLMODE: require
       DB_NAME: 
       PGDATABASE: 
-      DB_HOST: 
-      PGHOST: 
+      DB_HOST:
+      PGHOST:
       PGUSER:
       DB_USER:
       # use pgbouncer
@@ -28,18 +49,6 @@ services:
       ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
       ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST:
 
-      # TODO
-      ODOO_BASE_URL: https://${project_name}.akretion.com
-      PGSSLMODE: require
-      RUNNING_ENV: prod
-
-      SENTRY: False
-      LOG_LEVEL: warn
-      SENTRY_TRACES_SAMPLE_RATE: 0.00001
-      # TODO
-      # SENTRY_DSN:
-      # sentry and bus_alt_connection don't require installation
-      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
     volumes:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons
       - ~/data/${COMPOSE_PROJECT_NAME}/filestore:/data/odoo/filestore

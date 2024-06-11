@@ -1,0 +1,63 @@
+services:
+  odoo:
+    environment:
+      # if a module is missing,
+      # - verify modules[] in spec.yaml 
+      # - (re) run `ak sparse`
+      ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons
+
+      # sentry and bus_alt_connection don't require installation
+      # you may want to add queue_job here
+      # bus_alt_connection is required for CI and prod
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
+
+
+      # usually it's ok have a public encryption key dev
+      # if you need to store secrets for all environments
+      # you may create an additionnal key or generate
+      # a new key and store it elsewhere
+      ENCRYPTION_KEY_DEV:
+
+      KWKHTMLTOPDF_SERVER_URL: http://kwkhtmltopdf:8080
+
+      # start small with sequential tasks
+      # increase capacity of channel with complexity
+      # of the project
+      ODOO_QUEUE_JOB_CHANNELS:
+          root:6,
+          root.pattern.import:1,
+          root.pattern.export:1,
+          root.shopinvader.bind_products:1,
+          root.search_engine.recompute:1,
+          root.search_engine.synchronize:1
+
+      # < 400 modules: 600*1024² - default value
+      LIMIT_MEMORY_SOFT: 629145600
+
+      # > 400 modules:  1700*1024²
+      # use this one instead
+      #LIMIT_MEMORY_SOFT: 1782579200
+      # if you need more: talk with infra team
+
+      # 2048*1024^2
+      # if you need more: talk with infra team
+      LIMIT_MEMORY_HARD: 2147483648
+
+      # LIMIT_TIME_CPU are longer in prod than CI / dev
+      LIMIT_TIME_CPU: 120
+      LIMIT_TIME_REAL: 240
+      LIMIT_TIME_REAL_CRON: 240
+
+      ODOO_REPORT_URL: http://odoo:8069
+
+      # no need to change this
+      RUNNING_ENV: $ENV
+      UNACCENT: "True"
+      PYTHONDONTWRITEBYTECODE: 1
+      LOCAL_USER_ID: $UID
+
+    hostname: ${ENV}-${COMPOSE_PROJECT_NAME}
+    labels:
+      docky.main.service: true
+      docky.user: odoo
+version: "3.7"

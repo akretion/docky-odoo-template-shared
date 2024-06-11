@@ -1,4 +1,4 @@
-#age1h8qrqg2cx4e054ywqsgcx8ej7lh7wwa0tf9me5x4sd3unq5asv5szay2uh
+#
 services:
   odoo:
     build:
@@ -6,22 +6,34 @@ services:
       target: prod
     image: "${BUILD_NAME}"
     environment:
-      - ODOO_BASE_URL=https://${DOMAIN}
-      - SENTRY=False
-      - PGSSLMODE=require
-      - DB_NAME=${CI_PROJECT_NAME}
-      - PGDATABASE=${CI_PROJECT_NAME}
-      - DB_NAME=${BUILD_NAME}
-      - PGDATABASE=${BUILD_NAME}
-      - DB_USER=${CI_PROJECT_NAME}
-      - PGUSER=${CI_PROJECT_NAME}
-      - DB_HOST=
-      - PGHOST=
+      ODOO_BASE_URL: https://${DOMAIN}
+      ODOO_REPORT_URL: https://${DOMAIN}
 
-      # NO SSL while in local
-      - ODOO_REPORT_URL=https://${DOMAIN}
-      - WORKERS=2
-      - MAX_CRON_THREADS=1
+      WORKERS: 2
+      MAX_CRON_THREADS: 1
+
+
+      SENTRY: False
+      # on some project you may activate sentry for your ci
+      # but take care to use a different DSN than the production
+
+      PGSSLMODE: require
+      DB_NAME: ${BUILD_NAME}
+      PGDATABASE: ${BUILD_NAME}
+      DB_USER: ${CI_PROJECT_NAME}
+      PGUSER: ${CI_PROJECT_NAME}
+      DB_HOST:
+      PGHOST:
+      # use pgbouncer
+      DB_PORT: 6432
+      PGPORT: 6432
+      # dont use pgbouncer for BUS_ALT_CON
+      IMDISPATCHER_DB_PORT: 5432
+      IMDISPATCHER_DB_HOST:
+      # don't use pgbouncer for queuejob
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST:
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
@@ -43,6 +55,20 @@ services:
       - type: volume
         source: filestore
         target: /data/odoo/filestore
+  bedrock:
+    image: ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest
+    profiles: [db]
+    environment:
+      DB_NAME: ${BUILD_NAME}
+      PGDATABASE: ${BUILD_NAME}
+      DB_USER: ${CI_PROJECT_NAME}
+      PGUSER: ${CI_PROJECT_NAME}
+      DB_HOST:
+      PGHOST:
+      CI_PROJECT_NAME: ${CI_PROJECT_NAME}
+    volumes:
+      - ./bin/get_db.sh:/odoo/get_db.sh
+      - ./bin/create_spares.sh:/odoo/create_spares.sh
 volumes:
   filestore:
 networks:

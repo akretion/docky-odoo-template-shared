@@ -7,10 +7,10 @@ services:
     image: postgres:16
     user: $UID:$GID
     environment:
-      - POSTGRES_USER=odoo
-      - POSTGRES_DB=odoo
-      - POSTGRES_PASSWORD=odoo
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      POSTGRES_USER: odoo
+      POSTGRES_DB: odoo
+      POSTGRES_PASSWORD: odoo
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - .db/data:/var/lib/postgresql/data/pgdata
     networks:
@@ -22,6 +22,9 @@ services:
     image: ${PROJECT_NAME}
     # cache_from: ${PROJECT_NAME} # main branch
     environment:
+      # you may want a lax addons path in dev
+      # but remind that you have to list installed odoo modules in spec.yaml
+      ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons
       DB_USER: odoo
       DB_HOST: db
       DB_PASSWORD: odoo
