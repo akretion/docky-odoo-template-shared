@@ -25,10 +25,15 @@ services:
       # you may want a lax addons path in dev
       # but remind that you have to list installed odoo modules in spec.yaml
       ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons
+      # DB_ and PG specified because entrypoint is not always ran if docker exec
       DB_USER: odoo
       DB_HOST: db
       DB_PASSWORD: odoo
       DB_NAME: odoo
+      PGDATABASE: odoo
+      PGUSER: odoo
+      PGHOST: db
+      PGPASSWORD: odoo
       LIST_DB: "True"
       DB_FILTER: .*
       WITHOUT_DEMO: "False"
