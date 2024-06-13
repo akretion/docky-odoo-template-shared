@@ -80,6 +80,10 @@ prebuild:
     - cd ${AK_WORKING_DIR}
 
     # exit early if there is no cache to derive
+    # usually, you may run the job "init_source_cache" from the major branch (16.0)
+    # but, if you are switching from another template layout
+    # this job may be not available because the actual 16.0 don't
+    # contain this job. So you have to run it manually from the server
     - test -d ~gitlab-runner/builds/${AK_BASE_CACHE_DIR} || exit 1 # Missing base dir
 
     # intialize caches (external-src, src and file store)
@@ -483,10 +487,17 @@ publish:
 init_source_cache:
   stage: maintenance
   script:
+    # this will create a cache dir for a major branch (16.0, 18.0)
+    # and warm it up with ak build
+    # btrfs allow us to have instant copy of files
+
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # create a cache dir in ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # at this point, we didn't change our directory yet
+    # so we are in gitlab runner' managed directory, the
+    # code is already checked out in '.'
     - REMOTE=`realpath --relative-base="$HOME" .`
     - cd ~gitlab-runner/builds/
+    # create a cache dir in ~gitlab-runner/builds/${AK_WORKING_DIR}
     - git clone ~/$REMOTE ${AK_WORKING_DIR}
     - cd ${AK_WORKING_DIR}
 
