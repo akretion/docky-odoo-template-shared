@@ -24,6 +24,11 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
+      {% if not use_secret %}
+      PGPASSWORD: ${PGPASSWORD}
+      DB_PASSWORD: ${PGPASSWORD}
+      {% endif %}
+
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
@@ -65,6 +70,10 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
+      {% if not use_secret %}
+      PGPASSWORD: ${PGPASSWORD}
+      DB_PASSWORD: ${PGPASSWORD}
+      {% endif %}
       CI_PROJECT_NAME: ${CI_PROJECT_NAME}
     volumes:
       - ./bin/get_db.sh:/odoo/get_db.sh

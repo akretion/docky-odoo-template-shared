@@ -41,6 +41,12 @@ services:
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
+      {% if not use_secret %}
+      # passwords are environnment variables
+      PGPASSWORD: ${PGPASSWORD}
+      DB_PASSWORD: ${PGPASSWORD}
+      {% endif %}
+
       # dont use pgbouncer for BUS_ALT_CON
       IMDISPATCHER_DB_PORT: 5432
       IMDISPATCHER_DB_HOST:
