@@ -10,7 +10,7 @@ services:
   odoo:
     restart: always
     # TODO
-    image: registry.gitlab.akretion.com/akretion/${project_name}:16-0_latest
+    image: registry.gitlab.akretion.com/akretion/{{ project_name }}:16-0_latest
     environment:
       # add and change your settings here
 
@@ -18,7 +18,7 @@ services:
       SENTRY_DSN:
       SENTRY_TRACES_SAMPLE_RATE: 0.00001
 
-      ODOO_BASE_URL: https://${project_name}.akretion.com
+      ODOO_BASE_URL: https://{{ project_name }}.akretion.com
 
       LIMIT_TIME_CPU: 240
       LIMIT_TIME_REAL: 480
