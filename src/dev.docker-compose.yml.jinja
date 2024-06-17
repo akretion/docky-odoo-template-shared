@@ -8,7 +8,7 @@ services:
     user: $UID:$GID
     environment:
       POSTGRES_USER: odoo
-      POSTGRES_DB: odoo
+      POSTGRES_DB: db
       POSTGRES_PASSWORD: odoo
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -29,8 +29,8 @@ services:
       DB_USER: odoo
       DB_HOST: db
       DB_PASSWORD: odoo
-      DB_NAME: odoo
-      PGDATABASE: odoo
+      DB_NAME: db
+      PGDATABASE: db
       PGUSER: odoo
       PGHOST: db
       PGPASSWORD: odoo
