@@ -23,10 +23,10 @@ project_name:
 branch_name:
   type: str
   choices:
-     - "17.0"
-     - "16.0"
-     - "15.0"
-     - "14.0"
+    - "17.0"
+    - "16.0"
+    - "15.0"
+    - "14.0"
   default: "16.0"
   help: Odoo version
 
@@ -76,7 +76,6 @@ next_templates:
 #   # true to be sure
 #   - rm --interactive=never -rf {{branch_name}}/odoo/local-src/.github
 
-
 _skip_if_exists:
   - frozen.yaml
   - README.md # TODO how to manage readme ?
@@ -88,4 +87,3 @@ _skip_if_exists:
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml
   - .copier-answers-personal.yml
-

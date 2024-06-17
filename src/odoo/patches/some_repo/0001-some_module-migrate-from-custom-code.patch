@@ -61,6 +61,5 @@ index 0000000..6574b71
      # because during the pre-init-hook, the new module is already installed
 +    openupgrade.update_module_names(cr, renamed_modules.items(), merge_modules=True)
 +    openupgrade.update_module_names(cr, merged_modules.items(), merge_modules=True)
--- 
+--
 2.43.2
-

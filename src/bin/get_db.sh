@@ -4,7 +4,7 @@
 # provision a db from a spare if needed
 # fallback to _template
 
-# This should be run before or in 
+# This should be run before or in
 
 # A spare is db derived from a template, ready to be renamed and used
 # It's quicker to rename a db than create a new one from a template

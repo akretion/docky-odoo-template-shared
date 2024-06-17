@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from plumbum import local
 from sys import stderr
+
+from plumbum import local
 
 DEFAULT_VERSION = "0.0.0"
 

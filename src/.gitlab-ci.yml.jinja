@@ -214,7 +214,7 @@ update_db:
 
     # get list of modules after
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt
-    
+
     # --no-index allow us to compare two untracked files
     # here we just want a easy to read diff
     # no-index before output
@@ -233,7 +233,7 @@ update_db:
 quality:
   stage: test
   script:
-    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR 
+    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR
     - cd odoo/local-src
     # but we want to use cache
     - export RUFF_CACHE_DIR=${AK_WORKING_DIR}
@@ -250,7 +250,7 @@ quality:
 lint:
   stage: test
   script:
-    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR 
+    # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR
     - cd odoo/local-src
     # but we want to use cache
     - export RUFF_CACHE_DIR=${AK_WORKING_DIR}
@@ -396,7 +396,7 @@ prepare_release:
     - VERSION=$(pysemver bump patch $LAST_TAG)
     - echo $VERSION
     - echo "VERSION=${VERSION}" >> variables.env
-   
+
   rules:
     - if: $CI_COMMIT_TAG
       # NOT in response of tag creation
@@ -421,7 +421,7 @@ publish:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}/odoo
     # touch: ak freeze to fail
     # for instance it may exists some issue with
-    # reference to closed PR and stuff like that 
+    # reference to closed PR and stuff like that
     # here we output in CURRENT_PATH to not mess
     # the AK_WORKING_DIR with an untracked frozen
     - ak freeze -o $CURRENT_PATH/odoo/frozen.yaml || touch $CURRENT_PATH/odoo/frozen.yaml
