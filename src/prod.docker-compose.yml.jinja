@@ -47,13 +47,6 @@ services:
       DB_PASSWORD: ${PGPASSWORD}
       {% endif %}
 
-      # dont use pgbouncer for BUS_ALT_CON
-      IMDISPATCHER_DB_PORT: 5432
-      IMDISPATCHER_DB_HOST:
-      # don't use pgbouncer for queuejob
-      ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
-      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST:
-
     volumes:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons
       - ~/data/${COMPOSE_PROJECT_NAME}/filestore:/data/odoo/filestore

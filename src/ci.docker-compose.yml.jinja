@@ -32,13 +32,6 @@ services:
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
-      # dont use pgbouncer for BUS_ALT_CON
-      IMDISPATCHER_DB_PORT: 5432
-      IMDISPATCHER_DB_HOST:
-      # don't use pgbouncer for queuejob
-      ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
-      ODOO_QUEUE_JOB_JOBRUNNER_DB_HOST:
-
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"

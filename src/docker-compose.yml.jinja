@@ -56,6 +56,12 @@ services:
       PYTHONDONTWRITEBYTECODE: 1
       LOCAL_USER_ID: $UID
 
+
+      # dont use pgbouncer for BUS_ALT_CON
+      IMDISPATCHER_DB_PORT: 5432
+      # don't use pgbouncer for queuejob
+      ODOO_QUEUE_JOB_JOBRUNNER_DB_PORT: 5432
+
     hostname: ${ENV}-${COMPOSE_PROJECT_NAME}
     labels:
       docky.main.service: true
