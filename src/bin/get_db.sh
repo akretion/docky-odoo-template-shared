@@ -15,6 +15,9 @@
 # AK_TEMPLATE_DB is someproject_template or someproject_14_template
 
 echo "get db"
+echo "DB_NAME: ${DB_NAME}"
+echo "AK_TEMPLATE_DB: ${AK_TEMPLATE_DB}"
+
 if ! command -v psql &> /dev/null
 then
   echo "Command 'psql' could not be found"
