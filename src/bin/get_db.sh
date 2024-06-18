@@ -35,7 +35,7 @@ then
 	exit 0
 fi
 
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname=\"${AK_TEMPLATE_DB}_spare_02\"" -d postgres )" == '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AK_TEMPLATE_DB}_spare_02'" -d postgres )" == '1' ]
 then
 	echo "take spare_01"
 	psql -c "ALTER DATABASE \"${AK_TEMPLATE_DB}_spare_02\" RENAME TO \"${DB_NAME}\"" -d postgres
