@@ -113,8 +113,14 @@ pregetdb:
     # create spare db, --detach allow the runner to continue
     # we don't need to build the project for that
     # -- profile allow us to run only this container
+    # variables are passed through ci.docker-compose.yml
     - docker compose --profile db run --detach bedrock /odoo/create_spares.sh
     # always run
+  rules:
+    # but only on default target (one of the protected branches)
+    # because at the moment, we don't want to create spares for migrations branches
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH # on default branch
+    - if: $CI_DEFAULT_BRANCH == $CI_MERGE_REQUEST_TARGET_BRANCH_NAME # on PR targeting default branch
 
 fetch:
   # run once per commit

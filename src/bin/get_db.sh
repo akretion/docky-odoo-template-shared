@@ -12,7 +12,7 @@
 # so we create it with a suffix _spare_0n
 
 # DB_NAME is the target like someproject_1234
-# CI_PROJECT_NAME is someproject
+# AK_TEMPLATE_DB is someproject_template or someproject_14_template
 
 echo "get db"
 if ! command -v psql &> /dev/null
@@ -28,20 +28,23 @@ then
 	exit 0
 fi
 
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${CI_PROJECT_NAME}_spare_01'" -d postgres )" == '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AK_TEMPLATE_DB}_spare_01'" -d postgres )" == '1' ]
 then
 	echo "take spare_01"
-	psql -c "ALTER DATABASE \"${CI_PROJECT_NAME}_spare_01\" RENAME TO \"${DB_NAME}\"" -d postgres
+	psql -c "ALTER DATABASE \"${AK_TEMPLATE_DB}_spare_01\" RENAME TO \"${DB_NAME}\"" -d postgres
 	exit 0
 fi
 
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname=\"${CI_PROJECT_NAME}_spare_02\"" -d postgres )" == '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname=\"${AK_TEMPLATE_DB}_spare_02\"" -d postgres )" == '1' ]
 then
 	echo "take spare_01"
-	psql -c "ALTER DATABASE \"${CI_PROJECT_NAME}_spare_02\" RENAME TO \"${DB_NAME}\"" -d postgres
+	psql -c "ALTER DATABASE \"${AK_TEMPLATE_DB}_spare_02\" RENAME TO \"${DB_NAME}\"" -d postgres
 	exit 0
 fi
 
 echo "start from template"
-createdb ${DB_NAME} -T ${CI_PROJECT_NAME}_template
+# AK_TEMPLATE_DB = by default is CI_PROJECT_NAME_template
+# but during a migration, it should be 
+# CI_PROJECT_NAME_16-0_template
+createdb ${DB_NAME} -T ${AK_TEMPLATE_DB}
 exit 0

@@ -67,7 +67,8 @@ services:
       PGPASSWORD: ${PGPASSWORD}
       DB_PASSWORD: ${PGPASSWORD}
       {% endif %}
-      CI_PROJECT_NAME: ${CI_PROJECT_NAME}
+      # we give AK_TEMPLATE_DB here for get_spare
+      AK_TEMPLATE_DB: ${CI_PROJECT_NAME}
     volumes:
       - ./bin/get_db.sh:/odoo/get_db.sh
       - ./bin/create_spares.sh:/odoo/create_spares.sh
