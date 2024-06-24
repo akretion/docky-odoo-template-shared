@@ -47,7 +47,7 @@ fi
 
 echo "start from template"
 # AK_TEMPLATE_DB = by default is CI_PROJECT_NAME_template
-# but during a migration, it should be 
+# but during a migration, it should be
 # CI_PROJECT_NAME_16-0_template
 createdb ${DB_NAME} -T ${AK_TEMPLATE_DB}
 exit 0
