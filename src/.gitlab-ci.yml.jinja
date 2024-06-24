@@ -534,8 +534,8 @@ rmcache:
 kwkhtmltopdf:
   stage: maintenance
   script:
-    - docker compose -f kwkhtmltopdf-traefik.docker compose.yml down
-    - docker compose -f kwkhtmltopdf-traefik.docker compose.yml up -d
+    - docker compose -f kwkhtmltopdf-traefik.docker-compose.yml down
+    - docker compose -f kwkhtmltopdf-traefik.docker-compose.yml up -d
   when: manual
   rules:
     # TODO: only on default branch
