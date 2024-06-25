@@ -258,6 +258,8 @@ lint:
   script:
     # pre-commit may change files, so we don't want to run it from $AK_WORKING_DIR
     - cd odoo/local-src
+    # if no .pre-commit-config, don't run precommit
+    - test -f .pre-commit-config.yaml || exit 0
     # but we want to use cache
     - export RUFF_CACHE_DIR=${AK_WORKING_DIR}
     # run pre-commit only on files in this directory
