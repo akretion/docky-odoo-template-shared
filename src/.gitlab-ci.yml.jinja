@@ -7,8 +7,9 @@
 variables:
   # To have prefiled variables, go to Build > Pipeline > Run pipeline
   AK_TEMPLATE_DB:
-    description: "DB to work with. _template or _previous_version_template. Only used in init_db job"
-    value: ${CI_PROJECT_NAME}_template
+    description: "Force a different template_db for get_db. template1 for empty db"
+    value: ""
+
   AK_DO_OPENUPGRADE_MIGRATION:
     description: "Do an openupgrade migration"
     options:
@@ -62,6 +63,7 @@ before_script:
   - echo $CI_COMMIT_REF_PROTECTED
   - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
   - echo $CI_COMMIT_REF_SLUG
+  - export MAIN_BRANCH=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH}}
   - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
   - export CI_DOMAIN=${CI_DOMAIN}
   - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
@@ -319,19 +321,6 @@ test:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
-
-# # Initialize the database (by installing a module)
-# init_db:
-#   stage: migrate
-#   script:
-#     - export PGDATABASE=$BUILD_NAME
-#     - echo "DB_NAME=$BUILD_NAME" >> .env
-#     - docker compose kill
-#     - docker compose run odoo odoo -i base --stop-after-init
-#     # advice: Instead of base, install a module that contains your dependencies
-#   rules:
-#     # if emptydb tag is set (and no keepdb) this job will run
-#     - if: $CI_MERGE_REQUEST_LABELS =~ /emptydb/ && $CI_MERGE_REQUEST_LABELS !~ /keepdb/
 
 # Run the container used for the review
 review:
