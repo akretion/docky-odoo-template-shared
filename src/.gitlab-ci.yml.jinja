@@ -193,11 +193,11 @@ build:
     - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
 
     # ak build
-    - cd odoo && ak clone && ak sparse && ak build && cd ..
+    - cd odoo && time ak clone && time ak sparse && time ak build && cd ..
 
 
     # temp sentry release for ci use only
-    - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
+    - time docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
   needs: ["fetch"]
 
 # Run the database changes (click-odoo-update)
