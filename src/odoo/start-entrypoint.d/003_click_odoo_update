@@ -12,5 +12,12 @@ then
     exit 0
 fi
 
+IS_DB_INCOMPATIBLE=$(python -c "from odoo import service; print(len(service.db.list_db_incompatible(('$DB_NAME',))) > 0)")
+
+if [ $IS_DB_INCOMPATIBLE == "True" ]
+then
+    echo "Database $DB_NAME is incompatible. DB is not in the same version than the code."
+    exit 0
+fi
 echo "START UPDATING USING CLICK ODOO"
 click-odoo-update --i18n-overwrite

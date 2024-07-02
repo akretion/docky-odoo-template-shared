@@ -230,14 +230,16 @@ update_db:
     - echo ${BUILD_NAME}
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
- 
+
     # here we expect to have a functionnal db
 
     # get list of modules before
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt
 
-    - $AK_DO_OPENUPGRADE_MIGRATION || docker compose run --rm odoo click-odoo-update
-    - ($AK_DO_OPENUPGRADE_MIGRATION && docker compose run --rm odoo odoo --update all --load=base,web,openupgrade_framework --stop-after-init) || true
+    # run click-odoo or migration from the entrypoint
+    - docker compose run --rm odoo odoo --stop-after-init
+    # if migration, we don't output the full log here, it's too long
+    # but it's available as an artefact
 
     # get list of modules after
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt
@@ -250,6 +252,15 @@ update_db:
     - git diff --no-index --output modules_changed_nocolor.diff --no-color -- modules_before.txt modules_after.txt  || true
     - cat modules_changed.diff
     - cp modules_changed.diff $CURRENT_PATH/odoo
+  after_script:
+    - CURRENT_PATH=`pwd`
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # if there is a log, we copy it
+    - test -e "shared/migration.log" && cp shared/migration.log $CURRENT_PATH/migration.log
+    # and we display only a subset
+    - test -e "shared/migration.log" && echo "Display last 400 lines of migration log:"
+    - test -e "shared/migration.log" && tail shared/migration.log --lines 400
+
   needs:
       # refresh_db do a docker compose stop, we don't want to be halted
       # if this job start sooner
@@ -260,7 +271,13 @@ update_db:
       optional: true
     - job: "build"
   artifacts:
-    paths: ["odoo/modules_changed.diff"]
+    # always artifacts in order to get the migrate_logs
+    when: always
+    paths: [
+      "odoo/modules_changed.diff",
+      "migration.log",
+    ]
+
 
 quality:
   stage: test

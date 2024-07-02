@@ -53,6 +53,12 @@ services:
       - type: volume
         source: filestore
         target: /data/odoo/filestore
+      - type: bind
+        source: ./shared
+        target: /data/odoo/shared
+        bind:
+          # create shared dir if needed
+          create_host_path: true
   bedrock:
     image: ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest
     profiles: [db]
