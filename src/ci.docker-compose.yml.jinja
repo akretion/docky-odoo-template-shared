@@ -70,7 +70,7 @@ services:
       # we give AK_TEMPLATE_DB here for get_spare
       AK_TEMPLATE_DB: ${AK_TEMPLATE_DB}
     volumes:
-      - ./bin/get_db.sh:/odoo/get_db.sh
+      - ./bin/get_db.py:/odoo/get_db.py
       - ./bin/create_spares.sh:/odoo/create_spares.sh
 volumes:
   filestore:

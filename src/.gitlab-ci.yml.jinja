@@ -200,6 +200,29 @@ build:
     - time docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
   needs: ["fetch"]
 
+refresh_db:
+  stage: refresh
+  script:
+    # no need to wait for a build
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    # first stop odoo to quit all db connexions
+    # test if it's still needed ? - docker compose stop
+
+    # if keepdb is in labels exit early
+    # if we use rules: here, this job will not be created in the pipeline
+    # meaning we can't run the same pipeline again after having put the label
+    # we have to run manuall the full pipeline
+    # CI_MERGE_REQUEST_LABEL is empty on branch pipelines
+    - echo ${CI_MERGE_REQUEST_LABELS} | grep keepdb && exit 0
+
+    - docker compose --profile db run bedrock dropdb --force --if-exists $BUILD_NAME
+
+    - $AK_DO_OPENUPGRADE_MIGRATION && export IS_MIGRATION="--migration" || true
+    - $AK_DO_OPENUPGRADE_MIGRATION || export IS_MIGRATION=""
+    - test -z "$AK_TEMPLATE_DB" && export FORCE_TEMPLATE="" || export FORCE_TEMPLATE="--force_template $AK_TEMPLATE_DB"
+
+    - docker compose --profile db run bedrock odoo/get_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME $IS_MIGRATION $FORCE_TEMPLATE
+  needs: ["fetch"]
 # Run the database changes (click-odoo-update)
 update_db:
   stage: migrate
@@ -207,12 +230,8 @@ update_db:
     - echo ${BUILD_NAME}
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-
-    # first stop odoo to quit all db connexions
-    - docker compose stop
-    # drop db if needed
-    - docker compose --profile db run bedrock dropdb --force --if-exists $BUILD_NAME
-    - docker compose --profile db run bedrock odoo/get_db.sh
+ 
+    # here we expect to have a functionnal db
 
     # get list of modules before
     - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt
@@ -231,10 +250,15 @@ update_db:
     - git diff --no-index --output modules_changed_nocolor.diff --no-color -- modules_before.txt modules_after.txt  || true
     - cat modules_changed.diff
     - cp modules_changed.diff $CURRENT_PATH/odoo
-  rules:
-    # if keepdb is set, this job will not run
-    - if: $CI_MERGE_REQUEST_LABELS !~ /keepdb/
-  needs: ["build"]
+  needs:
+      # refresh_db do a docker compose stop, we don't want to be halted
+      # if this job start sooner
+      # optional true, let us the ability to run if refresh_db is not in
+      # the pipleline
+      # if we don't refresh (get a new one) the db, we still update the db
+    - job: "refresh_db"
+      optional: true
+    - job: "build"
   artifacts:
     paths: ["odoo/modules_changed.diff"]
 
