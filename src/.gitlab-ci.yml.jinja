@@ -278,6 +278,28 @@ update_db:
       "migration.log",
     ]
 
+publish_db:
+  stage: migrate
+  script:
+    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
+    - docker compose down
+    - NEXT_VERSION="$(pysemver bump major $MAIN_BRANCH.0)"
+    # replace . by - in version...
+    - ODOO_VERSION=${NEXT_VERSION//./-}
+    - export TARGET_DB_NAME=${BUILD_NAME}_${ODOO_VERSION}_to_migrate_template
+    - export FORCE_TEMPLATE="--force_template $BUILD_NAME"
+    - docker compose --profile db run bedrock dropdb --force --if-exists $TARGET_DB_NAME
+    - docker compose --profile db run bedrock odoo/get_db.py $TARGET_DB_NAME $MAIN_BRANCH $CI_PROJECT_NAME $FORCE_TEMPLATE
+  needs:
+      # refresh_db do a docker compose stop, we don't want to be halted
+      # if this job start sooner
+      # optional true, let us the ability to run if refresh_db is not in
+      # the pipleline
+      # if we don't refresh (get a new one) the db, we still update the db
+    - job: "update_db"
+  rules:
+    - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS =~ /migration/
+    - if: $AK_IS_MAJOR_BRANCH == "true" && $AK_DO_OPENUPGRADE_MIGRATION == "true"
 
 quality:
   stage: test
@@ -378,6 +400,8 @@ review:
       optional: true
     - job: "build"
       optional: true
+    - job: "publish_db"
+      optional: true
   rules:
     - if: $AK_IS_MR == "true"
 
@@ -421,6 +445,8 @@ review_preprod:
     - job: "update_db"
       optional: true
     - job: "build"
+      optional: true
+    - job: "publish_db"
       optional: true
 
 prepare_release:
