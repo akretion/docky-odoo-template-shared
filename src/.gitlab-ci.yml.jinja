@@ -283,9 +283,12 @@ publish_db:
   script:
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose down
-    - NEXT_VERSION="$(pysemver bump major $MAIN_BRANCH.0)"
-    # replace . by - in version...
-    - ODOO_VERSION=${NEXT_VERSION//./-}
+    # split by . and get first result in MAJOR, second in MINOR, rest in last var
+    - IFS='.' read -r MAJOR MINOR DUMMY <<< "$MAIN_BRANCH"
+    # increment version for next migration
+    - ((MAJOR+=1))
+    # sanitize version with dash to be complient with get_db.py
+    - ODOO_VERSION=${MAJOR}-${MINOR}
     - export TARGET_DB_NAME=${BUILD_NAME}_${ODOO_VERSION}_to_migrate_template
     - export FORCE_TEMPLATE="--force_template $BUILD_NAME"
     - docker compose --profile db run bedrock dropdb --force --if-exists $TARGET_DB_NAME
