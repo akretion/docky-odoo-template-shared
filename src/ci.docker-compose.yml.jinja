@@ -78,6 +78,7 @@ services:
     volumes:
       - ./bin/get_db.py:/odoo/get_db.py
       - ./bin/create_spares.sh:/odoo/create_spares.sh
+      - ./bin/publish_db.py:/odoo/publish_db.py
 volumes:
   filestore:
 networks:
