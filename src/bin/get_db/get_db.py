@@ -107,6 +107,7 @@ def main_bs(cr, args, db_list):
     if force_template:
         # use force_template and exit
         create_from_template(cr, db_name, force_template)
+        return True
 
     if is_openupgrade_migration:
         # template should be: project_name_major-to_migrate_template
