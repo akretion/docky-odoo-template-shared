@@ -161,4 +161,7 @@ def main():
         # rethrow ?
 
 
-main()
+
+if __name__ == '__main__':
+    # run as a script, not imported as a module
+    main()
