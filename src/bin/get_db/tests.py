@@ -128,7 +128,8 @@ def test_main_bs():
         "db_name": "proj_123",
         "major_branch": "19.0",
         "project_name": "proj",
-        "force_template": "proj_preprod-18-0",
+        "force_template_key": "--force_template",
+        "force_template_val": "proj_preprod-18-0",
     }
 
     def test4_create_from_template(cr, db_name, template):
@@ -149,18 +150,20 @@ def test_main_bs():
         "db_name": "proj_123",
         "major_branch": "19.0",
         "project_name": "proj",
-        "force_template": "proj_preprod-dontexist-0",
+        "force_template_key": "--force_template",
+        "force_template_val": "proj_preprod-dontexist-0",
     }
 
     def test5_create_from_template(cr, db_name, template):
-        assert False
+        # we don't care if this template exists or not
+        assert template == "proj_preprod-dontexist-0"
 
     def test5_rename_spare(cr, db_name, template):
         assert False
 
     get_db.create_from_template = test5_create_from_template
     get_db.rename_spare = test5_rename_spare
-    assert main_bs(cr, parse_args(args5.values()), db_list) is False
+    main_bs(cr, parse_args(args5.values()), db_list)
 
     # TEST6
     # test with a not existing migration
