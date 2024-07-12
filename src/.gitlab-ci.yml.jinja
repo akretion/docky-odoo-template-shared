@@ -139,40 +139,6 @@ fetch:
     - git checkout ${NEW_HEAD}
   needs: ["prebuild"]
 
-build_openupgrade:
-  stage: build
-  script:
-    # refactore with build !
-    # ak build then docker build
-    - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-
-    - cp .env-ci .env
-    # TODO use copier or something to inialize this env variables
-    - echo BUILD_NAME=${BUILD_NAME} >> .env
-    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
-    - echo "DOMAIN=${DOMAIN}" >> .env
-    # uid , gid used by docker in postgres to fix perms on .db
-    - echo "UID=`id -u`" >> .env
-    - echo "GID=`id -g`" >> .env
-
-    # ak build specific
-    - cd odoo
-    - cat spec.yaml spec-openupgrade.yaml > spec-migration.yaml
-    - ak build -c spec-migration.yaml
-    - cd ..
-
-    # add the load variable to docker compose
-
-    # manage secrets
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
-
-    # temp sentry release for ci use only
-    - docker compose build --build-arg SENTRY_RELEASE=$CI_COMMIT_SHORT_SHA
-  rules:
-    - if: $AK_DO_OPENUPGRADE_MIGRATION == "true"
-  needs: ["fetch"]
-
 build:
   stage: build
   script:
