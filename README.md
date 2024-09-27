@@ -1,8 +1,8 @@
 # Basic Odoo project template used by [docky](https://github.com/akretion/docky)
 
-This repo contains all the basic files needed to create an Odoo project from scratch using the [docky](https://github.com/akretion/docky) and [ak](https://github.com/akretion/ak) command-line tools developed by [Akretion](https://akretion.com).
+This repo contains all the basic files needed to create an Odoo project from scratch using [ak](https://github.com/akretion/ak) command-line tool developed by [Akretion](https://akretion.com).
 
-To start a new Odoo project, you don't need to download this repo anymore :
+To start a new Odoo project, you don't need to download this repo.
 
 1. First install to [docky](https://github.com/akretion/docky) (version > 8.0.0), [copier](https://github.com/copier-org/copier) and [ak](https://github.com/akretion/ak)
 
@@ -15,20 +15,23 @@ pipx install copier
 pipx install git+https://github.com/akretion/ak.git@master
 ```
 
-2. Create en *empty folder* for your Odoo projet and run `copier copy` in it
+2. Create an *empty folder* for your Odoo projet and run `copier copy` in it
+
 ```
-copier copy https://github.com/akretion/docky-odoo-template my-odoo-project
+copier copy https://github.com/akretion/docky-odoo-template-shared .
 ```
 
-3. create the ".env" file
+3. Create the ".env" file by running copier copy again but with a different template
 
-you can copy the ".env-sample" to ".env" and update enviroment variable if needed
+```
+copier copy https://github.com/akretion/docky-odoo-template-personal .
+```
 
+4. Download the Odoo source code and other external modules specified in the [spec.yaml](odoo/spec.yaml) `ak build` from the spec.yaml's folder
 
-4. Download the Odoo source code and other external modules specified in the [spec.yaml](odoo/spec.yaml) and [odoo-spec.yaml](odoo/odoo-spec.yaml) file using `ak build` from the spec.yaml's folder
 ```
 cd odoo
-ak build -c odoo-spec.yaml
+ak clone
 ak build
 ```
 
@@ -49,66 +52,11 @@ To reload the Odoo docker image or to update your docky after changing you envir
 More information on : [docky](https://github.com/akretion/docky).
 
 
+# Gitlab
+
+On gitlab, mark the branch as protected
+
+
 # Bump and Migration
 
-When creating migration script (pre, post...) you can name the directory "0.0.0"
-Indeed Odoo always run migration script with the version "0.0.0" so you can use this as
-"current" migration script for your PR.
-Then when you will run the cmd "./bump" it will set the right version number.
-
-
-
-# Spec Tips (TODO move in ak doc ?)
-
-```
-social:
-    modules:
-        - mail_debrand
-    src: https://github.com/OCA/social 14.0
-
-server-auth:
-  modules:
-    - auth_oidc
-  src: https://github.com/OCA/server-auth 14.0
-
-# Recommanded way: prefer short syntax without merges
-# all stable modules from main branch
-server-tools:
-  modules:
-    - base_technical_user
-  src: https://github.com/OCA/server-tools 14.0
-
-# and an dedicated entry (dir) for each
-# pending branch in order to avoid merges.
-server-tools-sentry:
-  modules:
-    - sentry
-  src: https://github.com/akretion/server-tools 14.0-mig-sentry-sdk
-
-# Alternative syntax
-# not recommanded
-# can also be used with multiple patch on the same module
-server-brand:
-    modules:
-      - disable_odoo_online
-      - remove_odoo_enterprise
-    remotes:
-        oca: https://github.com/OCA/server-brand
-    #   ak: https://github.com/akretion/server-brand
-    merges:
-        - oca 14.0
-        - oca refs/pull/39/head # PR for 'remove_odoo_enterprise'
-        # - ak somebranch
-```
-
-
-
-# Tips for the template maintenance
-
-## pre-commit
-
-Precommit file are extracted from the OCA project https://github.com/OCA/oca-addons-repo-template
-
-For updating the files you need to execute the file **update_oca_file.py**
-Then commit the updated files
-In case that oca have added files please update the script before
+From the gitlab pipeline, run the "publish" job to create an updated docker image
