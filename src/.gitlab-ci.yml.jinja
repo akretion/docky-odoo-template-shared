@@ -200,7 +200,9 @@ update_db:
     # here we expect to have a functionnal db
 
     # get list of modules before
-    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt
+    # fallback to emtpy file if db is empty
+    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_before.txt || touch modules_before.txt
+
 
     # run click-odoo or migration from the entrypoint
     - docker compose run --rm odoo odoo --stop-after-init
