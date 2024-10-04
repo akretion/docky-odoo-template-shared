@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Install odoo if the db is existing bug empty
+# usefull for initialization on CI and prod
+
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
+then
+    echo "Database $DB_NAME does not exist, ignoring script"
+    exit 0
+fi
+
+if [ "$( psql $DB_NAME -tAc "SELECT 1 FROM pg_tables WHERE tablename='ir_config_parameter'" )" != '1' ]
+then
+    echo "Database $DB_NAME not initialized. We initialize !"
+    # click-odoo-init do not seams to work when the db exist and is empty
+    # click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
+
+    # basic install
+    odoo -i base --stop-after-init
+    exit 0
+fi
+
+exit 0
