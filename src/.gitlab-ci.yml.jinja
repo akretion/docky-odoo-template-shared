@@ -116,7 +116,7 @@ pregetdb:
     # we don't need to build the project for that
     # -- profile allow us to run only this container
     # variables are passed through ci.docker-compose.yml
-    - docker compose --profile db run --detach bedrock /odoo/create_spares.sh
+    - docker compose --profile db run --detach --rm bedrock /odoo/create_spares.sh
     # always run
   rules:
     # but only on default target (one of the protected branches)
@@ -181,13 +181,13 @@ refresh_db:
     # CI_MERGE_REQUEST_LABEL is empty on branch pipelines
     - echo ${CI_MERGE_REQUEST_LABELS} | grep keepdb && exit 0
 
-    - docker compose --profile db run bedrock dropdb --force --if-exists $BUILD_NAME
+    - docker compose --profile db run --rm bedrock dropdb --force --if-exists $BUILD_NAME
 
     - $AK_DO_OPENUPGRADE_MIGRATION && export IS_MIGRATION="--migration" || true
     - $AK_DO_OPENUPGRADE_MIGRATION || export IS_MIGRATION=""
     - test -z "$AK_TEMPLATE_DB" && export FORCE_TEMPLATE="" || export FORCE_TEMPLATE="--force_template $AK_TEMPLATE_DB"
 
-    - docker compose --profile db run bedrock odoo/get_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME $IS_MIGRATION $FORCE_TEMPLATE
+    - docker compose --profile db run --rm bedrock /odoo/get_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME $IS_MIGRATION $FORCE_TEMPLATE
   needs: ["fetch"]
 # Run the database changes (click-odoo-update)
 update_db:
@@ -257,7 +257,7 @@ publish_db:
     # ensure no connections
     - docker compose down
     # other connections like pgbouncer will be droped by publish_db
-    - docker compose --profile db run bedrock odoo/publish_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME
+    - docker compose --profile db run --rm bedrock /odoo/publish_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME
   needs:
       # refresh_db do a docker compose stop, we don't want to be halted
       # if this job start sooner
@@ -379,7 +379,7 @@ stop_review:
   script:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - docker compose --profile db run bedrock dropdb --force --if-exists $BUILD_NAME
+    - docker compose --profile db run --rm bedrock dropdb --force --if-exists $BUILD_NAME
     - docker compose down --remove-orphans --volumes
     - cd $CURRENT_PATH
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
