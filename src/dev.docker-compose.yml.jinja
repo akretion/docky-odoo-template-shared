@@ -5,6 +5,10 @@ networks:
 services:
   db:
     image: postgres:16
+    # UID and GID should be defined
+    # and .db/data created with UID rights (better)
+    # or UID and GID not defined and .db not existing
+    # before running otherwise pg fail to start. (worst)
     user: $UID:$GID
     environment:
       POSTGRES_USER: odoo
@@ -12,6 +16,9 @@ services:
       POSTGRES_PASSWORD: odoo
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
+      # it's important to have two dirs level
+      # otherwise, permissions with uid do not
+      # work well (docker <=27)
       - .db/data:/var/lib/postgresql/data/pgdata
     networks:
       - local
