@@ -6,12 +6,6 @@ services:
       # - (re) run `ak sparse`
       ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons
 
-      # sentry and bus_alt_connection don't require installation
-      # you may want to add queue_job here
-      # bus_alt_connection is required for CI and prod
-      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
-
-
       # usually it's ok have a public encryption key dev
       # if you need to store secrets for all environments
       # you may create an additionnal key or generate

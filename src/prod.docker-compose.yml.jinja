@@ -18,6 +18,11 @@ services:
       SENTRY_DSN:
       SENTRY_TRACES_SAMPLE_RATE: 0.00001
 
+      # sentry and bus_alt_connection don't require installation
+      # you may want to add queue_job here
+      # bus_alt_connection is required for CI and prod
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
+
       ODOO_BASE_URL: https://{{ project_name }}.akretion.com
 
       LIMIT_TIME_CPU: 240

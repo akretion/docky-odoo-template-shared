@@ -12,6 +12,11 @@ services:
       WORKERS: 2
       MAX_CRON_THREADS: 1
 
+      # sentry and bus_alt_connection don't require installation
+      # you may want to add queue_job here
+      # bus_alt_connection is required for CI and prod
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
+
 
       SENTRY: "False"
       # on some project you may activate sentry for your ci
