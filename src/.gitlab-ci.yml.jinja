@@ -64,7 +64,7 @@ before_script:
   - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
   - echo $CI_COMMIT_REF_SLUG
   - export MAIN_BRANCH=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH}}
-  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
+  - export BUILD_NAME=${CI_PROJECT_NAME}--${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
   - export CI_DOMAIN=${CI_DOMAIN}
   - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
 
@@ -363,7 +363,7 @@ review:
     - docker compose up -d
   environment:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
-    url: https://${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}.${CI_DOMAIN}
+    url: https://${CI_PROJECT_NAME}--${CI_MERGE_REQUEST_IID}.${CI_DOMAIN}
     on_stop: stop_review
   needs:
     - job: "update_db"
@@ -396,12 +396,12 @@ review_preprod:
   stage: review_preprod
   script:
     - echo "DB_NAME=$BUILD_NAME" >> .env
-    - echo "DOMAIN=${CI_PROJECT_NAME}_preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
+    - echo "DOMAIN=${CI_PROJECT_NAME}--preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose up -d
   environment:
     name: preprod_${CI_COMMIT_BRANCH}
-    url: https://${CI_PROJECT_NAME}_preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}
+    url: https://${CI_PROJECT_NAME}--preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}
   rules:
     - if: $AK_IS_MR == null
       # don't review preprod in branches
