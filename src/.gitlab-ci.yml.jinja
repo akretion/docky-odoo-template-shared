@@ -210,7 +210,9 @@ update_db:
     # but it's available as an artefact
 
     # get list of modules after
-    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt
+    # fallback to empty file if wrong credentials.
+    # TODO: move this command inside bedrock like get_db
+    - psql -d ${BUILD_NAME} -c "select name, latest_version from ir_module_module order by name asc;" --csv -o modules_after.txt || touch modules_after.txt
 
     # --no-index allow us to compare two untracked files
     # here we just want a easy to read diff
