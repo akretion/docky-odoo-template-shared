@@ -12,10 +12,20 @@ services:
       WORKERS: 2
       MAX_CRON_THREADS: 1
 
+      # SERVER_WIDE_MODULES is now managed from the copier template
+      # when modules sentry, bus_alt_connection(pgbouncer) and queue_job
+      # are migrated, they are automatically installed in the next `copier update`
+      # if you need to install something else in SERVER_WIDE_MODULES please
+      # let us know the use case.
       # sentry and bus_alt_connection don't require installation
-      # you may want to add queue_job here
       # bus_alt_connection is required for CI and prod
-      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
+      # queue_job is present in case you need it
+      {% if branch_name == "18.0" %}
+      # for the moment sentry and bus_alt_connection not migrated yet
+      SERVER_WIDE_MODULES: web,queue_job
+      {% else %}
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection,queue_job
+      {% endif %}
 
 
       SENTRY: "False"
@@ -34,9 +44,12 @@ services:
       DB_PASSWORD: ${PGPASSWORD}
       {% endif %}
 
+      {% if branch_name != "18.0" %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
+      {% endif %}
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"

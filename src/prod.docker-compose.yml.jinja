@@ -18,11 +18,6 @@ services:
       SENTRY_DSN:
       SENTRY_TRACES_SAMPLE_RATE: 0.00001
 
-      # sentry and bus_alt_connection don't require installation
-      # you may want to add queue_job here
-      # bus_alt_connection is required for CI and prod
-      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection
-
       ODOO_BASE_URL: https://{{ project_name }}.akretion.com
 
       LIMIT_TIME_CPU: 240
@@ -35,6 +30,16 @@ services:
       RUNNING_ENV: prod
 
       # don't change after this line
+
+      # sentry and bus_alt_connection don't require installation
+      # bus_alt_connection is required for CI and prod
+      {% if branch_name == "18.0" %}
+      SERVER_WIDE_MODULES: web,queue_job
+      {% else %}
+      SERVER_WIDE_MODULES: web,sentry,bus_alt_connection,queue_job
+      {% endif %}
+
+
       # ask infra team for the following
       PGSSLMODE: require
       DB_NAME:
@@ -43,9 +48,12 @@ services:
       PGHOST:
       PGUSER:
       DB_USER:
+
+      {% if branch_name != "18.0" %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
+      {% endif %}
       {% if not use_secret %}
       # passwords are environnment variables
       PGPASSWORD: ${PGPASSWORD}
