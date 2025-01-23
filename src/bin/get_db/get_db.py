@@ -49,6 +49,7 @@ def list_db(cr, project_name):
 
 
 def rename_spare(cr, db_name, spare):
+    print(f"create {db_name} from spare {spare};")
     query = sql.SQL("ALTER DATABASE {spare} RENAME TO {db_name};").format(
         db_name=sql.Identifier(db_name),
         spare=sql.Identifier(spare),
@@ -57,6 +58,7 @@ def rename_spare(cr, db_name, spare):
 
 
 def create_from_template(cr, db_name, template):
+    print(f"create {db_name} from template {template};")
     query = sql.SQL("CREATE DATABASE {db_name} TEMPLATE {template};").format(
         db_name=sql.Identifier(db_name),
         template=sql.Identifier(template),
@@ -139,6 +141,8 @@ def main_bs(cr, args, db_list):
     print(
         f"{proj_name_ver_template} or {proj_name_def_template} not found", file=stderr
     )
+    print(f"Intialize with empty db", file=stderr)
+    create_from_template(cr, db_name, "template1")
     return False
 
 
