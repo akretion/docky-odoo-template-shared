@@ -33,12 +33,11 @@ services:
 
       # sentry and bus_alt_connection don't require installation
       # bus_alt_connection is required for CI and prod
-      {% if branch_name == "18.0" %}
+{% if branch_name == "18.0" %}
       SERVER_WIDE_MODULES: web,queue_job
-      {% else %}
+{% else %}
       SERVER_WIDE_MODULES: web,sentry,bus_alt_connection,queue_job
-      {% endif %}
-
+{% endif %}
 
       # ask infra team for the following
       PGSSLMODE: require
@@ -48,12 +47,11 @@ services:
       PGHOST:
       PGUSER:
       DB_USER:
-
-      {% if branch_name != "18.0" %}
+{% if branch_name != "18.0" %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
-      {% endif %}
+{% endif %}
 
     volumes:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons

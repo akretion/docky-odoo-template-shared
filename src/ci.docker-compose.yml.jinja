@@ -20,14 +20,12 @@ services:
       # sentry and bus_alt_connection don't require installation
       # bus_alt_connection is required for CI and prod
       # queue_job is present in case you need it
-      {% if branch_name == "18.0" %}
+{% if branch_name == "18.0" %}
       # for the moment sentry and bus_alt_connection not migrated yet
       SERVER_WIDE_MODULES: web,queue_job
-      {% else %}
+{% else %}
       SERVER_WIDE_MODULES: web,sentry,bus_alt_connection,queue_job
-      {% endif %}
-
-
+{% endif %}
       SENTRY: "False"
       # on some project you may activate sentry for your ci
       # but take care to use a different DSN than the production
@@ -39,13 +37,11 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
-
-      {% if branch_name != "18.0" %}
+{% if branch_name != "18.0" %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
-      {% endif %}
-
+{% endif %}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
