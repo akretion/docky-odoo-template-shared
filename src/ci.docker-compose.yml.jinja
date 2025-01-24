@@ -39,10 +39,6 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
-      {% if not use_secret %}
-      PGPASSWORD: ${PGPASSWORD}
-      DB_PASSWORD: ${PGPASSWORD}
-      {% endif %}
 
       {% if branch_name != "18.0" %}
       # use pgbouncer
