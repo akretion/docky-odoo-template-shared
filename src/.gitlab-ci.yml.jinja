@@ -381,7 +381,8 @@ stop_review:
   script:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - docker compose --profile db run --rm bedrock dropdb --force --if-exists $BUILD_NAME
+    - docker compose --profile db run --rm bedrock dropdb --force --if-exists ${BUILD_NAME}
+    - docker compose --profile db run --rm bedrock dropdb --force --if-exists ${BUILD_NAME}_test
     - docker compose down --remove-orphans --volumes
     - cd $CURRENT_PATH
     - rm -rf ~gitlab-runner/builds/${AK_WORKING_DIR}
