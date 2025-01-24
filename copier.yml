@@ -42,6 +42,7 @@ odoo_version:
 use_secret:
   type: bool
   help: generate docker-compose dedicate file for secret
+  # only for bootstraping clea-ci|prod.secrets.docker-compose.yml
 
 org_name:
   type: str

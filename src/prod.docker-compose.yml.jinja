@@ -54,11 +54,6 @@ services:
       DB_PORT: 6432
       PGPORT: 6432
       {% endif %}
-      {% if not use_secret %}
-      # passwords are environnment variables
-      PGPASSWORD: ${PGPASSWORD}
-      DB_PASSWORD: ${PGPASSWORD}
-      {% endif %}
 
     volumes:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons

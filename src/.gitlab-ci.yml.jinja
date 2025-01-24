@@ -101,6 +101,8 @@ pregetdb:
     # manage secrets
     # run only if ci.secrets.docker-compose.yml exists
     - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+    # if no secrets exists, create an empty one to make .env happy
+    - test -f secrets.docker-compose.yml || touch secrets.docker-compose.yml
 
     # TODO: factorise this:
     - cp .env-ci .env
