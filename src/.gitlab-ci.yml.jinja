@@ -328,10 +328,11 @@ test:
     - echo $ADDONS_TEST
     - echo $ADDONS_TEST_DEP
     # start from a clean state
-    - dropdb --force --if-exists ${BUILD_NAME}_test
+    - docker compose --profile db run --rm bedrock dropdb --force --if-exists ${BUILD_NAME}_test
     # --labels traefik.enable=false in order to not mess with the review
     # init db with dependencies of our modules
-    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
+    # we force PG port in order to bypass pgbouncer
+    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" -e "PGPORT=5432" -e "DB_PORT=5432" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
     # run the tests here
     - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
     # display report in MR
