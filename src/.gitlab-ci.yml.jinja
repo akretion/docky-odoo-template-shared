@@ -98,11 +98,6 @@ pregetdb:
   script:
     # no need to wait for a build
     # can be run from anywhere
-    # manage secrets
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
-    # if no secrets exists, create an empty one to make .env happy
-    - test -f secrets.docker-compose.yml || touch secrets.docker-compose.yml
 
     # TODO: factorise this:
     - cp .env-ci .env
@@ -140,6 +135,7 @@ fetch:
     - git remote add --mirror=fetch $REMOTE ~/$REMOTE || true
     - git fetch --all
     - git checkout ${NEW_HEAD}
+    - sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
   needs: ["prebuild"]
 
 build:
@@ -156,10 +152,6 @@ build:
     # uid , gid used by docker in postgres to fix perms on .db
     - echo "UID=`id -u`" >> .env
     - echo "GID=`id -g`" >> .env
-
-    # manage secrets
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
 
     # ak build
     - cd odoo && time ak clone && time ak sparse && time ak build && cd ..
