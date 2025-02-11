@@ -22,6 +22,8 @@ COPY ./src/odoo/tools /odoo/src/odoo/tools
 COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
 RUN /odoo/bin/pip install -e /odoo/src
 
+COPY bin/* /usr/local/bin/
+
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt
 RUN /odoo/bin/pip install --no-cache-dir \

@@ -40,7 +40,7 @@ services:
       PGPORT: 6432
 {% endif %}
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=${ENABLE_TRAEFIK:-true}"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=false"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) && PathPrefix(`/longpolling/`)"
