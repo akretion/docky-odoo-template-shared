@@ -1,0 +1,3 @@
+#!/bin/bash
+rm -f "{{ project_name }}".dump
+tsh scp --login=app --proxy=teleport.akretion.com:443 "{{ project_name }}"-ci:/home/app/backup/"{{ project_name }}".dump .

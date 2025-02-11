@@ -1,0 +1,8 @@
+#!/bin/bash
+
+DBNAME="${1:-db}"
+dropdb $DBNAME --if-exist
+createdb $DBNAME
+pg_restore -j 8 -d $DBNAME "{{ project_name }}".dump --no-owner
+psql -d $DBNAME -c "UPDATE ir_cron set active=False"
+psql -d $DBNAME -c "UPDATE res_users SET password='admin'"
