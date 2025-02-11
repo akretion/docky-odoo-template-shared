@@ -108,6 +108,7 @@ pregetdb:
     - cp .env-ci .env
     # TODO use copier or something to inialize this env variables
     - echo BUILD_NAME=${BUILD_NAME} >> .env
+    - echo PGDATABASE=${BUILD_NAME} >> .env
     - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
     - echo "DOMAIN=${DOMAIN}" >> .env
     # uid , gid used by docker in postgres to fix perms on .db
@@ -401,7 +402,7 @@ stop_review:
 review_preprod:
   stage: review_preprod
   script:
-    - echo "DB_NAME=$BUILD_NAME" >> .env
+    - echo "PGDATABASE=$BUILD_NAME" >> .env
     - echo "DOMAIN=${CI_PROJECT_NAME}--preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose up -d

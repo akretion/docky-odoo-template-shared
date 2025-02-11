@@ -37,11 +37,6 @@ services:
       # you may want to add queue_job here
       SERVER_WIDE_MODULES: web
 
-      # DB_ and PG specified because entrypoint is not always ran if docker exec
-      DB_USER: odoo
-      DB_HOST: db
-      DB_PASSWORD: odoo
-      DB_NAME: db
       PGDATABASE: db
       PGUSER: odoo
       PGHOST: db
