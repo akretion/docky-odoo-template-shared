@@ -31,6 +31,13 @@ branch_name:
   default: "18.0"
   help: Odoo version
 
+# TODO change the place of this option before merging
+# I just put here to avoid conflict
+# it should be moved after org_name
+use_manual_bump:
+  type: bool
+  help: Bump your image manually instead of using UI, this allow to use migrate script
+
 odoo_version:
   # odoo_version is more readable
   # branch_name is required by huddle, more generic
