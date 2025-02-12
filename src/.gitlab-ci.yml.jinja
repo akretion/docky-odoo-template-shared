@@ -136,6 +136,7 @@ fetch:
     - git fetch --all
     - git checkout ${NEW_HEAD}
     - sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+    - ./bin/generate_env
   needs: ["prebuild"]
 
 build:
@@ -143,15 +144,6 @@ build:
   script:
     # ak build then docker build
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-
-    - cp .env-ci .env
-    # TODO use copier or something to inialize this env variables
-    - echo BUILD_NAME=${BUILD_NAME} >> .env
-    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
-    - echo "DOMAIN=${DOMAIN}" >> .env
-    # uid , gid used by docker in postgres to fix perms on .db
-    - echo "UID=`id -u`" >> .env
-    - echo "GID=`id -g`" >> .env
 
     # ak build
     - cd odoo && time ak clone && time ak sparse && time ak build && cd ..
@@ -308,10 +300,6 @@ test:
   script:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    - cp .env .env-test
-    - echo "ENABLE_TRAEFIK=false" >> .env-test
-    - echo "COMPOSE_PROJECT_NAME=${BUILD_NAME}_test" >> .env-test
-    - echo "PGDATABASE=${BUILD_NAME}_test" >> .env-test
     - docker compose --env-file .env-test kill
     - dropdb --force --if-exists ${BUILD_NAME}_test
     - docker compose --env-file .env-test run --rm odoo initdb ${BUILD_NAME}_test --cache-prefix ${CI_PROJECT_NAME:0:7}
