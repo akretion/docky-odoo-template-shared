@@ -96,26 +96,8 @@ pregetdb:
   # ensure spare are presents
   stage: maintenance
   script:
-    # no need to wait for a build
-    # can be run from anywhere
-
-    # TODO: factorise this:
-    - cp .env-ci .env
-    # TODO use copier or something to inialize this env variables
-    - echo BUILD_NAME=${BUILD_NAME} >> .env
-    - echo PGDATABASE=${BUILD_NAME} >> .env
-    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
-    - echo "DOMAIN=${DOMAIN}" >> .env
-    # uid , gid used by docker in postgres to fix perms on .db
-    - echo "UID=`id -u`" >> .env
-    - echo "GID=`id -g`" >> .env
-
-    # create spare db, --detach allow the runner to continue
-    # we don't need to build the project for that
-    # -- profile allow us to run only this container
-    # variables are passed through ci.docker-compose.yml
-    - docker compose --profile db run --detach --rm bedrock /odoo/create_spares.sh
-    # always run
+    # no need to wait for a build can be run from anywhere
+    - ./bin/create_spares.sh
   rules:
     # but only on default target (one of the protected branches)
     # because at the moment, we don't want to create spares for migrations branches
