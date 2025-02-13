@@ -62,7 +62,7 @@ services:
         target: /data/odoo/filestore
       - type: bind
         source: ./shared
-        target: /data/odoo/shared
+        target: /odoo/shared
         bind:
           # create shared dir if needed
           create_host_path: true
