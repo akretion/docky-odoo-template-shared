@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euxo pipefail
 
 # create few spares from a template
 
@@ -7,20 +8,13 @@
 # At creation of the spare, we do not know the final name of the db
 # so we create it with a suffix _spare_0n
 
-# Arguments: $DB_NAME name of the final db like 'someproject'
-# $AK_TEMPLATE_DB should exist like ${DB_NAME}_template
-#    or ${DB_NAME}_16-0_template
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <DB_TEMPLATE>"
+  exit 1
+fi
 
-# because it may take looong time to execute
-# you can run this from docker compose run --detach
-# in order to let the gitlab runner continue without expecting
-# a result
-
-echo "Generate spares"
+echo "Generate spares for template $1"
 echo $(date -u)
-
-# DB_NAME is the target like someproject_1234
-# AK_TEMPLATE_DB is someproject_template or someproject_16-0_template
 
 if ! command -v psql &> /dev/null
 then
@@ -30,25 +24,25 @@ then
 fi
 
 # ensure template exists
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AK_TEMPLATE_DB}'" -d postgres)" != '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$1'" -d postgres)" != '1' ]
 then
-	echo "Template do not exist" >> /dev/stderr
-	echo "AK_TEMPLATE_DB = ${AK_TEMPLATE_DB}" >> /dev/stderr
-	exit 1
+  echo "Template do not exist" >> /dev/stderr
+  echo "$1 = $1" >> /dev/stderr
+  exit 1
 fi
 
 # create a spare only if it doesn't exists
 # we assume spare are deleted somewhere else when a new template is provisionned
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AK_TEMPLATE_DB}_spare_01'" -d postgres)" != '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$1_spare_01'" -d postgres)" != '1' ]
 then
-	echo "Create spare_01"
-	createdb ${AK_TEMPLATE_DB}_spare_01 -T ${AK_TEMPLATE_DB};
+  echo "Create spare_01"
+  createdb $1_spare_01 -T $1;
 fi
 
-if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='${AK_TEMPLATE_DB}_spare_02'" -d postgres )" != '1' ]
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$1_spare_02'" -d postgres )" != '1' ]
 then
-	echo "Create spare_02"
-	createdb ${AK_TEMPLATE_DB}_spare_02 -T ${AK_TEMPLATE_DB};
+  echo "Create spare_02"
+  createdb $1_spare_02 -T $1;
 fi
 
 echo "Spare generated"

@@ -67,6 +67,7 @@ before_script:
   - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
   - export PGDATABASE=$BUILD_NAME
   - export DOMAIN=${CI_PROJECT_NAME}--${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}.${CI_DOMAIN}
+  - export AK_TEMPLATE_DB=${AK_TEMPLATE_DB:-${CI_PROJECT_NAME}_template}
 
 prebuild:
   # warmup caches once per MR
@@ -97,7 +98,7 @@ pregetdb:
   stage: maintenance
   script:
     # no need to wait for a build can be run from anywhere
-    - ./bin/create_spares.sh
+    - ./bin/create_spares.sh $AK_TEMPLATE_DB
   rules:
     # but only on default target (one of the protected branches)
     # because at the moment, we don't want to create spares for migrations branches
