@@ -135,8 +135,9 @@ fetch:
     - REMOTE=`realpath --relative-base="$HOME" .`
     - NEW_HEAD=`git rev-parse HEAD`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # || true if the remote already exists
-    - git remote add --mirror=fetch $REMOTE ~/$REMOTE || true
+    # Remove all remotes:
+    - git remote | xargs -n1 git remote remove
+    - git remote add --mirror=fetch $REMOTE ~/$REMOTE
     - git fetch --all
     - git checkout ${NEW_HEAD}
   needs: ["prebuild"]
