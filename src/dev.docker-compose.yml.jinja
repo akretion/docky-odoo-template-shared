@@ -34,8 +34,8 @@ services:
       ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons
 
       # sentry and bus_alt_connection are not necessary on dev
-      # you may want to add queue_job here
-      SERVER_WIDE_MODULES: web
+      # you may want to add queue_job here or in .env
+      SERVER_WIDE_MODULES: ${SERVER_WIDE_MODULES:-web}
 
       # DB_ and PG specified because entrypoint is not always ran if docker exec
       DB_USER: odoo
