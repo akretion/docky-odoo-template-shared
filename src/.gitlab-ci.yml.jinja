@@ -427,8 +427,11 @@ prepare_release:
     # goal of this step is to compute the next version
     # here we stay in the gitlab runner's directory
     # Build tag but do not push on registry
-    # push is done manually in publish
-    - LAST_TAG=$(./bin/last_git_tag.sh ${CI_COMMIT_BRANCH}.0)
+    # push is done manually in publish{% if branch_name == "16.0" or branch_name == "14.0" %}
+    # cut -d is necessary when switching from another tag scheme
+    # like x.y.0.0.year.mm.dd
+    - LAST_TAG=$(./bin/last_git_tag.sh ${CI_COMMIT_BRANCH}.0 | cut -d '.' -f -3){% else %}
+    - LAST_TAG=$(./bin/last_git_tag.sh ${CI_COMMIT_BRANCH}.0){% endif %}
     # increment version number
     - VERSION=$(pysemver bump patch $LAST_TAG)
     - echo $VERSION
