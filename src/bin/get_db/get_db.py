@@ -141,7 +141,7 @@ def main_bs(cr, args, db_list):
     print(
         f"{proj_name_ver_template} or {proj_name_def_template} not found", file=stderr
     )
-    print(f"Intialize with empty db", file=stderr)
+    print("Intialize with empty db", file=stderr)
     create_from_template(cr, db_name, "template1")
     return False
 

@@ -20,7 +20,9 @@ from sys import argv
 
 def parse_args(args):
     # expose input from CLI
-    parser = argparse.ArgumentParser(description="Create a template for next version. Next version is guessed from major_branch.")
+    parser = argparse.ArgumentParser(
+        description="Create a template for next version. "
+        "Next version is guessed from major_branch.")
 
     # Required attributes
     # here with force
