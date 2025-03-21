@@ -173,8 +173,6 @@ refresh_db:
   script:
     # no need to wait for a build
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # first stop odoo to quit all db connexions
-    # test if it's still needed ? - docker compose stop
 
     # if keepdb is in labels exit early
     # if we use rules: here, this job will not be created in the pipeline
@@ -182,6 +180,9 @@ refresh_db:
     # we have to run manuall the full pipeline
     # CI_MERGE_REQUEST_LABEL is empty on branch pipelines
     - echo ${CI_MERGE_REQUEST_LABELS} | grep keepdb && exit 0
+
+    # stop odoo to quit all db connexions
+    - docker compose stop odoo
 
     - docker compose --profile db run --rm bedrock dropdb --force --if-exists $BUILD_NAME
 
@@ -191,6 +192,7 @@ refresh_db:
 
     - docker compose --profile db run --rm bedrock /odoo/get_db.py $BUILD_NAME $MAIN_BRANCH $CI_PROJECT_NAME $IS_MIGRATION $FORCE_TEMPLATE
   needs: ["fetch"]
+
 # Run the database changes (click-odoo-update)
 update_db:
   stage: migrate
