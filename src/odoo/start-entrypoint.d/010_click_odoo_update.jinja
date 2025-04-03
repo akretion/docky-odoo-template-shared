@@ -20,4 +20,9 @@ then
     exit 0
 fi
 echo "START UPDATING USING CLICK ODOO"
+
+{% if use_manual_bump %}
+migrate --i18n-overwrite
+{% else %}
 click-odoo-update --i18n-overwrite
+{% endif %}

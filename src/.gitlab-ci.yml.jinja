@@ -52,6 +52,7 @@ stages:
   # because usually it's only
   # needed before the merge
   - test
+{% if use_manual_bump %}  - docker_push{% endif %}
 
 before_script:
   # TODO: manage mulitple preprod ?
@@ -423,6 +424,26 @@ review_preprod:
     - job: "build"
       optional: true
 
+{# # TODO we should merge this two solution
+# But as it need time and test get the two solution for now
+# so we can use the same template, update project and then merge it #}
+{% if use_manual_bump %}
+# Send the docker image to the registry in order to be downloaded in prod
+docker_push:
+  stage: docker_push
+  script:
+    - export TAG="${CI_COMMIT_MESSAGE//Bump version /}"
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+    - docker tag $BUILD_NAME $CI_REGISTRY_IMAGE:$TAG
+    - docker push $CI_REGISTRY_IMAGE:$TAG
+  rules:
+    - if: $CI_COMMIT_TITLE =~ /^Bump version/ && $AK_IS_MR == null
+  needs:
+    - update_db
+    - test
+{% else %}
 prepare_release:
   stage: deploy
   script:
@@ -454,6 +475,7 @@ prepare_release:
       dotenv: variables.env
   needs:
     - build
+
 
 publish:
   # creates a gitlab release
@@ -524,7 +546,7 @@ publish:
       when: never
     - if: $AK_IS_MAJOR_BRANCH == "true"
       # run on protected branches only
-
+{% endif %}
 
 init_source_cache:
   stage: maintenance
