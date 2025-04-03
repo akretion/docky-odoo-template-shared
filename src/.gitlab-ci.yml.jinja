@@ -64,9 +64,9 @@ before_script:
   - echo $CI_MERGE_REQUEST_TARGET_BRANCH_PROTECTED
   - echo $CI_COMMIT_REF_SLUG
   - export MAIN_BRANCH=${CI_MERGE_REQUEST_TARGET_BRANCH_NAME:-${CI_COMMIT_BRANCH}}
-  - export BUILD_NAME=${CI_PROJECT_NAME}--${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
-  - export CI_DOMAIN=${CI_DOMAIN}
-  - export DOMAIN=$BUILD_NAME.${CI_DOMAIN}
+  - export BUILD_NAME=${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}
+  - export PGDATABASE=$BUILD_NAME
+  - export DOMAIN=${CI_PROJECT_NAME}--${CI_MERGE_REQUEST_IID:-preprod-${CI_COMMIT_REF_SLUG}}.${CI_DOMAIN}
 
 prebuild:
   # warmup caches once per MR
@@ -98,16 +98,12 @@ pregetdb:
   script:
     # no need to wait for a build
     # can be run from anywhere
-    # manage secrets
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
-    # if no secrets exists, create an empty one to make .env happy
-    - test -f secrets.docker-compose.yml || touch secrets.docker-compose.yml
 
     # TODO: factorise this:
     - cp .env-ci .env
     # TODO use copier or something to inialize this env variables
     - echo BUILD_NAME=${BUILD_NAME} >> .env
+    - echo PGDATABASE=${BUILD_NAME} >> .env
     - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
     - echo "DOMAIN=${DOMAIN}" >> .env
     # uid , gid used by docker in postgres to fix perms on .db
@@ -139,6 +135,8 @@ fetch:
     - git remote add --mirror=fetch $REMOTE ~/$REMOTE || true
     - git fetch --all
     - git checkout ${NEW_HEAD}
+    - sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
+    - ./bin/generate_env
   needs: ["prebuild"]
 
 build:
@@ -146,19 +144,6 @@ build:
   script:
     # ak build then docker build
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-
-    - cp .env-ci .env
-    # TODO use copier or something to inialize this env variables
-    - echo BUILD_NAME=${BUILD_NAME} >> .env
-    - echo CI_PROJECT_NAME=${CI_PROJECT_NAME} >> .env
-    - echo "DOMAIN=${DOMAIN}" >> .env
-    # uid , gid used by docker in postgres to fix perms on .db
-    - echo "UID=`id -u`" >> .env
-    - echo "GID=`id -g`" >> .env
-
-    # manage secrets
-    # run only if ci.secrets.docker-compose.yml exists
-    - test -f ci.secrets.docker-compose.yml && sops -d ci.secrets.docker-compose.yml > secrets.docker-compose.yml
 
     # ak build
     - cd odoo && time ak clone && time ak sparse && time ak build && cd ..
@@ -312,55 +297,31 @@ lint:
   # can be run sooner
   needs: ["fetch"]
 
-
 test:
   stage: test
   script:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-    # get list of modules to test
-    # add back --select-exclude ${EXCLUDE_MODULES:-none} from a path
-    # qu'est ce que ça fait ça ?
-    #- docker compose run odoo initdb ${DB_NAME} --cache-prefix ${CI_PROJECT_NAME:0:7}
-    # TODO: réflechir si on laisse ça ici ou dans le conteneur
-
-    # list of all local-src modules
-    - ADDONS_TEST=$(manifestoo --select-addons-dir odoo/local-src list --separator=,)
-    - ADDONS_TEST_DEP=$(manifestoo --select-addons-dir odoo/local-src list-depends --separator=,)
-    - echo $ADDONS_TEST
-    - echo $ADDONS_TEST_DEP
-    # start from a clean state
-    - docker compose --profile db run --rm bedrock dropdb --force --if-exists ${BUILD_NAME}_test
-    # --labels traefik.enable=false in order to not mess with the review
-    # init db with dependencies of our modules
-    # we force PG port in order to bypass pgbouncer
-    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" -e "PGPORT=5432" -e "DB_PORT=5432" --rm odoo click-odoo-initdb -n ${BUILD_NAME}_test -m ${ADDONS_TEST_DEP} --cache-prefix ${CI_PROJECT_NAME:0:7}
-    # run the tests here
-    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage run --include "/odoo/local-src/*" --branch /odoo/bin/odoo --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
-    # display report in MR
-    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage report
-    # export for the artifacts
-    - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage xml --skip-empty
-    # extract coverage report
-    - docker compose cp odoo:/data/odoo/filestore/coverage.xml coverage.xml
-    # move coverage report to accessible location from gitlab-ci
-    - cp coverage.xml ${CURRENT_PATH}/coverage.xml
+    - docker compose --env-file .env-test kill
+    - dropdb --force --if-exists ${BUILD_NAME}_test
+    - docker compose --env-file .env-test run --rm odoo initdb ${BUILD_NAME}_test --cache-prefix ${CI_PROJECT_NAME:0:7}
+    - docker compose --env-file .env-test run --rm odoo runtests
+    - mv shared $CURRENT_PATH/
   rules:
     # Run tests in MR if there is no Skiptest tag
     - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
+    # Always run test in major branch
+    - if: $AK_IS_MAJOR_BRANCH == "true" && $AK_DO_OPENUPGRADE_MIGRATION != "true"
   needs:
-      # update_db do a docker compose stop, we don't want to be halted
-      # if this job start sooner
-      # optional true, let us the ability to run if update_db is cancelled
-    - job: "update_db"
-      optional: true
-  allow_failure: true
-  coverage: '/TOTAL(\W+\d+){5}\%/'
+    - job: "build"
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
+    when: always
     reports:
+      junit: shared/test_results/*.xml
       coverage_report:
         coverage_format: cobertura
-        path: coverage.xml
+        path: shared/coverage.xml
 
 # Run the container used for the review
 review:
@@ -403,7 +364,7 @@ stop_review:
 review_preprod:
   stage: review_preprod
   script:
-    - echo "DB_NAME=$BUILD_NAME" >> .env
+    - echo "PGDATABASE=$BUILD_NAME" >> .env
     - echo "DOMAIN=${CI_PROJECT_NAME}--preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose up -d

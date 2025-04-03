@@ -39,17 +39,13 @@ services:
       SERVER_WIDE_MODULES: web,sentry,bus_alt_connection,queue_job
 {% endif %}
 
-      # ask infra team for the following
       PGSSLMODE: require
-      DB_NAME:
-      PGDATABASE:
-      DB_HOST:
-      PGHOST:
-      PGUSER:
-      DB_USER:
+      PGDATABASE: $PGDATABASE
+      PGHOST: $PGHOST
+      PGPASSWORD: $PGPASSWORD
+      PGUSER: $PGUSER
 {% if branch_name != "18.0" %}
       # use pgbouncer
-      DB_PORT: 6432
       PGPORT: 6432
 {% endif %}
 

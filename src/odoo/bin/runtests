@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Usage: runtest
+
+# Run tests. Use unbuffer to get a colored output.
+
+ADDONS_TEST=$(manifestoo --select-exclude ${EXCLUDE_MODULES:-none} --select-addons-dir /odoo/local-src list --separator=,)
+# Move to shared folder so coverage file will be shared with the host
+# and so accessible by the gitlab runner
+cd /odoo/shared
+unbuffer coverage run --include "/odoo/local-src/*" --branch $(which odoo) --stop-after-init -i ${ADDONS_TEST} --test-enable --workers=0
+ls -alh
+coverage report -i --precision=2 --skip-empty
+coverage xml -i -o coverage.xml
+
+sed -i "s=<source></source>=<source>/home/gitlab-runner/builds</source>=g" /odoo/shared/coverage.xml
+sed -i "s=/odoo/local-src=${CI_PROJECT_DIR}/odoo/local-src=g" /odoo/shared/coverage.xml
+sed -i "s=/home/gitlab-runner/builds/=builds/=g" /odoo/shared/coverage.xml

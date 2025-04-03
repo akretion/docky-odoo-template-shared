@@ -1,0 +1,26 @@
+#!/bin/bash
+set -euxo pipefail
+
+# generate env file (env, .env-test)
+# Usage:
+#   ./generate_env
+
+echo "generate env file"
+cp .env-ci .env
+# uid , gid used by docker in postgres to fix perms on .db
+cat << EOF >> .env
+BUILD_NAME=${BUILD_NAME}
+CI_PROJECT_NAME=${CI_PROJECT_NAME}
+DOMAIN=${DOMAIN}
+UID=`id -u`
+GID=`id -g`
+EOF
+
+cp .env .env-test
+echo "PGDATABASE=${BUILD_NAME}" >> .env
+
+cat << EOF >> .env
+ENABLE_TRAEFIK=false
+COMPOSE_PROJECT_NAME=${BUILD_NAME}_test
+PGDATABASE=${BUILD_NAME}_test
+EOF

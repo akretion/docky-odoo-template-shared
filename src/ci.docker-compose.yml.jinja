@@ -31,19 +31,16 @@ services:
       # but take care to use a different DSN than the production
 
       PGSSLMODE: require
-      DB_NAME: ${BUILD_NAME}
-      PGDATABASE: ${BUILD_NAME}
-      DB_USER: ${CI_PROJECT_NAME}
-      PGUSER: ${CI_PROJECT_NAME}
-      DB_HOST:
-      PGHOST:
+      PGDATABASE: $PGDATABASE
+      PGHOST: $PGHOST
+      PGPASSWORD: $PGPASSWORD
+      PGUSER: $PGUSER
 {% if branch_name != "18.0" %}
       # use pgbouncer
-      DB_PORT: 6432
       PGPORT: 6432
 {% endif %}
     labels:
-      - "traefik.enable=true"
+      - "traefik.enable=${ENABLE_TRAEFIK:-true}"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=false"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) && PathPrefix(`/longpolling/`)"
@@ -65,7 +62,7 @@ services:
         target: /data/odoo/filestore
       - type: bind
         source: ./shared
-        target: /data/odoo/shared
+        target: /odoo/shared
         bind:
           # create shared dir if needed
           create_host_path: true
@@ -73,16 +70,11 @@ services:
     image: ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest
     profiles: [db]
     environment:
-      DB_NAME: ${BUILD_NAME}
-      PGDATABASE: ${BUILD_NAME}
-      DB_USER: ${CI_PROJECT_NAME}
-      PGUSER: ${CI_PROJECT_NAME}
-      DB_HOST:
-      PGHOST:
-      {% if not use_secret %}
-      PGPASSWORD: ${PGPASSWORD}
-      DB_PASSWORD: ${PGPASSWORD}
-      {% endif %}
+      PGSSLMODE: require
+      PGDATABASE: $PGDATABASE
+      PGHOST: $PGHOST
+      PGPASSWORD: $PGPASSWORD
+      PGUSER: $PGUSER
       # we give AK_TEMPLATE_DB here for get_spare
       AK_TEMPLATE_DB: ${AK_TEMPLATE_DB}
     volumes:
