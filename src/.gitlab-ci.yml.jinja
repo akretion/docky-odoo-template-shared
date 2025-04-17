@@ -403,8 +403,6 @@ stop_review:
 review_preprod:
   stage: review_preprod
   script:
-    - echo "DB_NAME=$BUILD_NAME" >> .env
-    - echo "DOMAIN=${CI_PROJECT_NAME}--preprod-${CI_COMMIT_REF_SLUG}.${CI_DOMAIN}" >> .env
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     - docker compose up -d
   environment:
