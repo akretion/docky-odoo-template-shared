@@ -90,6 +90,7 @@ services:
       - ./odoo/src/setup.py:/odoo/src/setup.py
       - ./odoo/src/setup.cfg:/odoo/src/setup.cfg
       - ./odoo/src/requirements.txt:/odoo/src/requirements.txt
+      - ./odoo/pytest.ini:/odoo/pytest.ini
       # data
       - ./data/addons:/data/odoo/addons
       - ./data/filestore:/data/odoo/filestore
