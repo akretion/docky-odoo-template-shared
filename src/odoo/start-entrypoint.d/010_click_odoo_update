@@ -22,3 +22,4 @@ then
 fi
 echo "START UPDATING USING CLICK ODOO"
 click-odoo-update --i18n-overwrite
+echo "END UPDATING USING CLICK ODOO"

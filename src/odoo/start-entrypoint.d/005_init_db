@@ -18,6 +18,8 @@ then
 
     # basic install
     odoo -i base --stop-after-init
+    echo "END DB initialization"
+
     exit 0
 fi
 
