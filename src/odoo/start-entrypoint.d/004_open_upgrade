@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux -o pipefail
 
 if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
 then
@@ -53,6 +54,7 @@ then
     # it may fail if the migration is not ready yet
 
     odoo --logfile=/data/odoo/shared/migration.log --update all --upgrade-path=/odoo/links/openupgrade_scripts/scripts --load=base,web,openupgrade_framework --stop-after-init || exit 1
+    echo "END OPENUPGRADE MIGRATION"
     exit 0
 else
     echo "Openupgrade framework or scripts not available !"

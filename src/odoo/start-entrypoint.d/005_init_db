@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux -o pipefail
 
 # Install odoo if the db is existing bug empty
 # usefull for initialization on CI and prod
@@ -17,6 +18,8 @@ then
 
     # basic install
     odoo -i base --stop-after-init
+    echo "END DB initialization"
+
     exit 0
 fi
 

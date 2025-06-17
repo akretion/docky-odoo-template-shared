@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eux -o pipefail
 
 if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
 then
@@ -21,3 +22,4 @@ then
 fi
 echo "START UPDATING USING CLICK ODOO"
 click-odoo-update --i18n-overwrite
+echo "END UPDATING USING CLICK ODOO"
