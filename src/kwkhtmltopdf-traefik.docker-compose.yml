@@ -8,4 +8,3 @@ services:
 networks:
   traefik:
     external: true
-version: "3.7"
