@@ -16,15 +16,16 @@ server-auth:
 
 server-env:
     modules:
-       - data_encryption
-       - server_environment
-       - server_environment_data_encryption
+        - data_encryption
+        - server_environment
+        - server_environment_data_encryption
     src: https://github.com/oca/server-env {{ odoo_version }}
 
 server-tools:
     modules:
-       - sentry
-       - bus_alt_connection
+        - sentry
+        - bus_alt_connection
+        - odoo_test_xmlrunner
     src: https://github.com/oca/server-tools {{ odoo_version }}
 
 web:

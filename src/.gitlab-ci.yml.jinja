@@ -342,10 +342,12 @@ test:
     - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage report
     # export for the artifacts
     - docker compose run --labels traefik.enable=false -e DB_NAME="${BUILD_NAME}_test" -e PGDATABASE="${BUILD_NAME}_test" --rm --workdir /data/odoo/filestore odoo coverage xml --skip-empty
-    # extract coverage report
+    # extract coverage/test results report
     - docker compose cp odoo:/data/odoo/filestore/coverage.xml coverage.xml
-    # move coverage report to accessible location from gitlab-ci
+    - docker compose cp odoo:/data/odoo/filestore/test_results test_results
+    # move coverage/test results report to accessible location from gitlab-ci
     - cp coverage.xml ${CURRENT_PATH}/coverage.xml
+    - cp -fr test_results ${CURRENT_PATH}/test_results
   rules:
     # Run tests in MR if there is no Skiptest tag
     - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS !~ /Skiptest/
@@ -359,6 +361,7 @@ test:
   coverage: '/TOTAL(\W+\d+){5}\%/'
   artifacts:
     reports:
+      junit: test_results/*.xml
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
