@@ -29,10 +29,6 @@ services:
     image: ${PROJECT_NAME}
     # cache_from: ${PROJECT_NAME} # main branch
     environment:
-      # you may want a lax addons path in dev
-      # but remind that you have to list installed odoo modules in spec.yaml
-      ADDONS_PATH: /odoo/links,/odoo/local-src,/odoo/src/odoo/addons,/odoo/src/addons
-
       # sentry and bus_alt_connection are not necessary on dev
       # you may want to add queue_job here
       SERVER_WIDE_MODULES: web
