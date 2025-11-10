@@ -92,6 +92,8 @@ services:
       - ./data/sessions:/data/odoo/sessions
       # mount home dir
       # - ./.home/.bash_history:/home/odoo/.bash_history
+      # mount backup directory
+      - ./backup:/odoo/backup
   kwkhtmltopdf:
     image: acsone/kwkhtmltopdf
     networks:
