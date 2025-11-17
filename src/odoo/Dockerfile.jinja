@@ -25,8 +25,7 @@ RUN /odoo/bin/pip install -e /odoo/src
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt
 RUN /odoo/bin/pip install --no-cache-dir \
-    -r /odoo/requirements.txt \
-    -f https://wheelhouse.acsone.eu/manylinux2014
+    -r /odoo/requirements.txt
 
 ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links,/odoo/local-src
 
@@ -40,8 +39,7 @@ FROM thisproject as dev
 # allow to pip install anything temporary
 COPY ./dev_requirements.txt /odoo/dev_requirements.txt
 RUN /odoo/bin/pip install --no-cache-dir \
-    -r /odoo/dev_requirements.txt \
-    -f https://wheelhouse.acsone.eu/manylinux2014
+    -r /odoo/dev_requirements.txt
 
 FROM thisproject as prod
 ARG SENTRY_RELEASE=0.0.0
