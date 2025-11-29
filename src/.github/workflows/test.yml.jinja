@@ -1,0 +1,86 @@
+{% if use_github_ci %}
+name: CI
+
+on:
+  push:
+    branches:
+      - "{{ branch_name }}*"
+  pull_request:
+    branches:
+      - "{{ branch_name }}*"
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    container: ghcr.io/oca/oca-ci/py3.10-odoo16.0:latest
+    services:
+      postgres:
+        image: postgres:12.0
+        env:
+          POSTGRES_USER: odoo
+          POSTGRES_PASSWORD: odoo
+          POSTGRES_DB: odoo
+        ports:
+          - 5432:5432
+    env:
+      COVERAGE_INCLUDE: "{% raw %}${{ github.workspace }}/odoo/local-src/*{% endraw %}"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fix file ownership
+        run: chown -R $(id -u):$(id -g) .
+
+      - name: Install Python dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          /github/home/.local/bin/uv pip install -r odoo/requirements.txt pyyaml git+https://github.com/akretion/ak
+
+      - name: Build addons paths and fetch dependencies
+        id: build_addons
+        working-directory: odoo
+        run: |
+          # 1. Download dependencies
+          ak clone && ak build
+
+          # 2. Define Base Paths
+          # /opt/odoo/addons is the Odoo core inside the OCA CI container
+          BASE_PATH="/opt/odoo/addons"
+          LOCAL_PATH="$(pwd)/local-src"
+
+          # 3. Generate External Paths dynamically
+          # List all directories in external-src, distinct them, and join with commas
+          # $(pwd) ensures we use absolute paths required by Odoo
+          EXTERNAL_PATHS=$(ls -d "$(pwd)/external-src"/* | paste -sd ",")
+
+          # 4. Combine them
+          FINAL_ADDONS_PATH="$BASE_PATH,$LOCAL_PATH,$EXTERNAL_PATHS"
+          
+          # 5. Export to GITHUB_ENV
+          # ADDONS_DIR is usually just the relative path to your modules for test discovery
+          echo "ADDONS_DIR=local-src" >> $GITHUB_ENV
+          echo "ADDONS_PATH=$FINAL_ADDONS_PATH" >> $GITHUB_ENV
+
+          # Debug print
+          echo "Calculated ADDONS_DIR: local-src"
+          echo "Calculated ADDONS_PATH: $FINAL_ADDONS_PATH"
+
+      - name: Install Odoo addons dependencies
+        working-directory: odoo
+        run: oca_install_addons
+
+      - name: Initialize test database
+        working-directory: odoo
+        run: oca_init_test_database
+
+      - name: Run Odoo tests
+        working-directory: odoo
+        run: oca_run_tests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: {% raw %}${{ secrets.CODECOV_TOKEN }}{% endraw %}
+          fail_ci_if_error: true
+{% endif %}

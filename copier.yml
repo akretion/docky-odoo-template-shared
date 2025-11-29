@@ -44,6 +44,11 @@ use_secret:
   help: generate docker-compose dedicate file for secret
   # only for bootstraping clea-ci|prod.secrets.docker-compose.yml
 
+use_github_ci:
+  type: bool
+  help: Set up GitHub CI workflows (pre-commit, tests)
+  default: false
+
 org_name:
   type: str
   default: Akretion
