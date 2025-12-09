@@ -41,12 +41,12 @@ services:
 
       # ask infra team for the following
       PGSSLMODE: require
-      DB_NAME:
-      PGDATABASE:
+      DB_NAME: {{ project_name }}
+      PGDATABASE: {{ project_name }}
+      PGUSER:  {{ project_name }}
+      DB_USER:  {{ project_name }}
       DB_HOST:
       PGHOST:
-      PGUSER:
-      DB_USER:
 {% if branch_name == "19.0" %}
       # use pgbouncer
       DB_PORT: 6432
