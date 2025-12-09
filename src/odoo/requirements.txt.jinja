@@ -1,8 +1,13 @@
 # TODO see what can be move into base image
 pyjwt # auth_oidc
 python-jose[cryptography] # auth_oidc
-#sentry 1.9.0 fixé dans le manifest du module sentry pour le moment
+
+{% if branch_name in ("18.0", "19.0") %}
+sentry-sdk>=2.0.0,<=2.22.0
+{% else %}
+#sentry 1.9.0 for 14.0 to 17.0
 sentry-sdk<=1.9.0
+{% endif %}
 
 #apispec #shopinvader
 #boto3==1.20.32 # shopinvader
