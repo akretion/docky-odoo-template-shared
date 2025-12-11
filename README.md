@@ -4,7 +4,7 @@ This repo contains all the basic files needed to create an Odoo project from scr
 
 To start a new Odoo project, you don't need to download this repo.
 
-1. First install to [docky](https://github.com/akretion/docky) (version > 8.0.0), [copier](https://github.com/copier-org/copier) and [ak](https://github.com/akretion/ak)
+1. First install to [docky](https://github.com/akretion/docky) (version > 8.0.0), [copier](https://github.com/copier-org/copier),  and [ak](https://github.com/akretion/ak)
 
 
 For that we deeply recommand you to install them with [pipx](https://github.com/pypa/pipx)
@@ -12,6 +12,7 @@ For that we deeply recommand you to install them with [pipx](https://github.com/
 ```
 pipx install docky
 pipx install copier
+pipx install git-aggregator
 pipx install git+https://github.com/akretion/ak.git@master
 ```
 
