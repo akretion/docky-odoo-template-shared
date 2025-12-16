@@ -12,7 +12,7 @@ COPY ./src/setup.py /odoo/src/setup.py
 
 COPY ./src/odoo/*.py /odoo/src/odoo/
 COPY ./src/odoo/cli /odoo/src/odoo/cli
-COPY ./src/odoo/conf /odoo/src/odoo/conf
+{% if branch_name in ("14.0","15.0","16.0","17.0","18.0") %}COPY ./src/odoo/conf /odoo/src/odoo/conf{% endif %}
 COPY ./src/odoo/modules /odoo/src/odoo/modules
 COPY ./src/odoo/osv /odoo/src/odoo/osv
 COPY ./src/odoo/release.py /odoo/src/odoo/release.py
