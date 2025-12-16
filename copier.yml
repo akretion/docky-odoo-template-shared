@@ -23,6 +23,7 @@ project_name:
 branch_name:
   type: str
   choices:
+    - "19.0"
     - "18.0"
     - "17.0"
     - "16.0"
