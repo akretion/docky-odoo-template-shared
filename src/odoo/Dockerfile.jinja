@@ -20,7 +20,7 @@ COPY ./src/odoo/service /odoo/src/odoo/service
 COPY ./src/odoo/tests /odoo/src/odoo/tests
 COPY ./src/odoo/tools /odoo/src/odoo/tools
 COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
-RUN /odoo/bin/pip install --config-setting editable_mode=compat -e /odoo/src
+RUN /odoo/bin/pip install {% if branch_name in ("14.0","15.0","16.0","17.0","18.0") %}--config-setting editable_mode=compat {%endif %}-e /odoo/src
 
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt
@@ -44,7 +44,7 @@ RUN /odoo/bin/pip install --no-cache-dir \
 FROM thisproject as prod
 ARG SENTRY_RELEASE=0.0.0
 COPY ./src /odoo/src
-RUN /odoo/bin/pip install --config-setting editable_mode=compat -e /odoo/src
+RUN /odoo/bin/pip install {% if branch_name in ("14.0","15.0","16.0","17.0","18.0") %}--config-setting editable_mode=compat {% endif %}-e /odoo/src
 COPY ./external-src /odoo/external-src
 COPY ./links /odoo/links
 COPY ./local-src /odoo/local-src
