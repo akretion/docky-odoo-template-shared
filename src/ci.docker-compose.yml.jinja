@@ -45,7 +45,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=false"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) && PathPrefix(`{% if branch_name in ["12.0", "14.0", "15.O", "16.0"] %}/longpolling/{% else %}/websocket{% endif %}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.rule=Host(`${DOMAIN}`) && PathPrefix(`{% if branch_name in ["12.0", "14.0", "15.O"] %}/longpolling/{% else %}/websocket{% endif %}`)"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.tls=false"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.service=${COMPOSE_PROJECT_NAME}odoo"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-long.service=${COMPOSE_PROJECT_NAME}odoo_long"
