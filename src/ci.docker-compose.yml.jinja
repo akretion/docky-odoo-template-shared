@@ -19,7 +19,9 @@ services:
       # let us know the use case.
       # sentry and bus_alt_connection don't require installation
       # bus_alt_connection is required for CI and prod
-{% if branch_name == "19.0" %}
+{% if is_intermediate_version %}
+      SERVER_WIDE_MODULES: web
+{% elif branch_name == "19.0" %}
       # for the moment sentry and bus_alt_connection not migrated yet
       SERVER_WIDE_MODULES: web,queue_job
 {% else %}
@@ -36,7 +38,7 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
-{% if branch_name != "19.0" %}
+{% if branch_name != "19.0" and not is_intermediate_version %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432

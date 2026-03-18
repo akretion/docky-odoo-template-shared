@@ -39,6 +39,13 @@ odoo_version:
   default: "{{branch_name}}"
   when: false
 
+
+is_intermediate_version:
+  # set migration stuff
+  type: bool
+  default: false
+  when: false
+
 # Remove ?
 use_secret:
   type: bool
