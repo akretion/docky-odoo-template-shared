@@ -41,6 +41,9 @@ COPY ./dev_requirements.txt /odoo/dev_requirements.txt
 RUN /odoo/bin/pip install --no-cache-dir \
     -r /odoo/dev_requirements.txt
 
+# Install fish shell
+RUN --mount=type=cache,target=/var/cache/apt apt-get update && apt-get install -y --no-install-recommends fish
+
 FROM thisproject as prod
 ARG SENTRY_RELEASE=0.0.0
 COPY ./src /odoo/src
