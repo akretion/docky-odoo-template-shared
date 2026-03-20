@@ -15,7 +15,7 @@ variables:
     options:
       - "true"
       - "false"
-    value: "false"
+    value: "{% if is_intermediate_version %}true{% else %}false{% endif %}"
 
 workflow:
   # Remember: gitlab stop rule evaluation at first match
