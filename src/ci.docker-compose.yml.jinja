@@ -80,10 +80,6 @@ services:
       PGUSER: ${CI_PROJECT_NAME}
       DB_HOST:
       PGHOST:
-      {% if not use_secret %}
-      PGPASSWORD: ${PGPASSWORD}
-      DB_PASSWORD: ${PGPASSWORD}
-      {% endif %}
       # we give AK_TEMPLATE_DB here for get_spare
       AK_TEMPLATE_DB: ${AK_TEMPLATE_DB}
     volumes:

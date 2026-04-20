@@ -46,12 +46,6 @@ is_intermediate_version:
   default: false
   when: false
 
-# Remove ?
-use_secret:
-  type: bool
-  help: generate docker-compose dedicate file for secret
-  # only for bootstraping clea-ci|prod.secrets.docker-compose.yml
-
 org_name:
   type: str
   default: Akretion
