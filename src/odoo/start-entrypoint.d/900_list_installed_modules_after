@@ -1,0 +1,19 @@
+#!/bin/bash
+set -eu -o pipefail
+
+# List all installed modules in /data/odoo/shared/modules_after.txt
+# This should be run after click-odoo-update
+
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
+then
+    echo "Database $DB_NAME does not exist, ignoring script"
+    exit 0
+fi
+
+if [ "$( psql $DB_NAME -tAc "SELECT 1 FROM pg_tables WHERE tablename='ir_config_parameter'" )" != '1' ]
+then
+    echo "Database $DB_NAME not initialized, ignoring script"
+    exit 0
+fi
+
+psql -d $DB_NAME -tAc "SELECT name, latest_version FROM ir_module_module ORDER BY name ASC" --csv -o /data/odoo/shared/modules_after.txt
