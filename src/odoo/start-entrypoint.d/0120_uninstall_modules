@@ -1,0 +1,44 @@
+#!/bin/bash
+
+if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
+then
+    echo "Database $DB_NAME does not exist, ignoring script"
+    exit 0
+fi
+
+if [ "$( psql $DB_NAME -tAc "SELECT 1 FROM pg_tables WHERE tablename='ir_config_parameter'" )" != '1' ]
+then
+    echo "Database $DB_NAME not initialized, ignoring script"
+    exit 0
+fi
+
+DB_INCOMPATIBLE=$(python -c "from odoo import service; print(len(service.db.list_db_incompatible(('$DB_NAME',))))")
+if [ $DB_INCOMPATIBLE = 1 ]
+then
+    echo "Database $DB_NAME has a different major odoo version than the code, ignoring script"
+    exit 0
+fi
+
+PATH_MODULE_LIST=/odoo/scripts/module_to_uninstall.py
+if [ ! -f $PATH_MODULE_LIST ]
+then
+    echo "$PATH_MODULE_LIST does not exists : skip module uninstallation"
+    exit 0
+fi
+
+TO_UNINSTALL_LIST=$(python $PATH_MODULE_LIST)
+if [ -z "${TO_UNINSTALL_LIST}" ]
+then
+    echo "No modules listed as to uninstall"
+    exit 0
+fi
+
+TO_UNINSTALL_REAL=$( psql $DB_NAME -tAc "SELECT string_agg(name, ',') FROM ir_module_module WHERE name in $TO_UNINSTALL_LIST AND state in ('installed', 'to upgrade', 'to remove');" )
+
+if [ -z "${TO_UNINSTALL_REAL}" ]
+then
+    echo "Nothing to uninstall"
+    exit 0
+fi
+
+click-odoo-uninstall -m $TO_UNINSTALL_REAL
