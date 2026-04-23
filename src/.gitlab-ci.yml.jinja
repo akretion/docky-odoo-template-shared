@@ -253,14 +253,11 @@ update_db:
       "migration.log",
     ]
 
-
 publish_db:
   stage: migrate
   script:
-    # goal of this step is to publish the database for the next version
-    # for instance desinstall leaf modules here to simplify the mig
+    # goal of this step is to publish the database for the next major branch
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
-
     # ensure no connections
     - docker compose down
     # other connections like pgbouncer will be droped by publish_db
@@ -278,6 +275,18 @@ publish_db:
     # the current version production, run only in one of the PR
     # this PR should be tagged migration
     - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS =~ /migration/
+
+trigger_next_pipeline:
+  stage: migrate
+  script:
+    # goal of this step is to trigger the migration for the next major branch
+    - NEXT_BRANCH=$(python -c "print(str(int('${MAIN_BRANCH}'.split('.')[0]) + 1) + '.0')")
+    - glab ci run-trig -b ${NEXT_BRANCH}
+  needs:
+    - job: "publish_db"
+  # next branch may not exist
+  allow_failure: true
+
 quality:
   stage: test
   script:
