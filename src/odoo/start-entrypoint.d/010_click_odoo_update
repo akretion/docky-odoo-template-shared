@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eux -o pipefail
+set -eu -o pipefail
 
 if [ "$( psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" )" != '1' ]
 then
@@ -20,6 +20,14 @@ then
     echo "Database $DB_NAME is incompatible. DB is not in the same version than the code."
     exit 0
 fi
+
+echo -e "\e[0Ksection_start:$(date +%s):Click Odoo Update\r\e[0K\e[32m--- Start Update ---\e[0m"
+
+# clear log before
+rm -f /data/odoo/shared/click-odoo-update.log
+
 echo "START UPDATING USING CLICK ODOO"
-click-odoo-update --i18n-overwrite
+click-odoo-update --i18n-overwrite 2>&1 | tee /data/odoo/shared/click-odoo-update.log || exit 1
 echo "END UPDATING USING CLICK ODOO"
+
+echo -e "\e[0Ksection_end:$(date +%s):Click Odoo Update\r\e[0K"

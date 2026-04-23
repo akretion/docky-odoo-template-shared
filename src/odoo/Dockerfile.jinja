@@ -5,7 +5,7 @@ FROM ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest as base
 # share the same odoo/src/requirements.txt
 # install odoo requirements first
 
-RUN mkdir -p /odoo/src/odoo/addons
+RUN mkdir -p /odoo/src/odoo/addons /data/odoo/shared
 
 COPY ./src/setup /odoo/src/setup
 COPY ./src/setup.py /odoo/src/setup.py
