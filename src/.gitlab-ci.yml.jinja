@@ -287,6 +287,14 @@ trigger_next_pipeline:
     - glab ci run-trig -b ${NEXT_BRANCH}
   needs:
     - job: "publish_db"
+  rules:
+    # same as publish_db
+    # a branch like 15.0
+    - if: $AK_IS_MAJOR_BRANCH == "true" && $AK_DO_OPENUPGRADE_MIGRATION == "true"
+    # the current version production, run only in one of the PR
+    # this PR should be tagged migration
+    - if: $AK_IS_MR == "true" && $CI_MERGE_REQUEST_LABELS =~ /migration/
+
   # next branch may not exist
   allow_failure: true
 
