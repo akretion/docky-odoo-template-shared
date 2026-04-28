@@ -26,7 +26,7 @@ cd $WORKDIR
 
 ${DIR}/list_updated_modules.sh  ${CLICK_ODOO_UPDATE_LOG} > ${MODULES_UPDATED}
 # modules_missing is comming from generate_code_quality
-${DIR}/merge_updated_and_installed_modules.sh ${MODULES_UPDATED} ${MODULES_AFTER} > ${MODULES_WITH_UPDATES}
+${DIR}/merge_updated_and_installed_modules.sh ${MODULES_BEFORE} ${MODULES_AFTER} ${MODULES_UPDATED} > ${MODULES_WITH_UPDATES}
 ${DIR}/merge_missing_and_installed_modules.sh ${MODULES_MISSING} ${MODULES_WITH_UPDATES} > ${MODULES_WITH_UPDATES_WITH_MISSING}
 
 git diff --no-index --output ${OUTPUT} --color -- ${MODULES_BEFORE} ${MODULES_WITH_UPDATES_WITH_MISSING} || true
