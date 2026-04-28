@@ -61,13 +61,11 @@ encryption_key_dev=${ENCRYPTION_KEY_DEV}
 encryption_key_ci=${ENCRYPTION_KEY_CI}
 encryption_key_prod=${ENCRYPTION_KEY_PROD}
 
+account_statement_import_api_bridge_url=${AUTH_IMPORT_API_BRIDGE_URL}
 account_statement_import_api_bridge_login=${AUTH_IMPORT_API_BRIDGE_LOGIN}
 account_statement_import_api_bridge_password=${AUTH_IMPORT_API_BRIDGE_PASSWORD}
 
 ${ADDITIONAL_ODOO_RC}
-
-[ir.config_parameter]
-bridge_api.base_url=${AUTH_IMPORT_API_BRIDGE_URL}
 
 [auth_oauth_provider.Akretion]
 client_id=${AUTH_OAUTH_PROVIDER_CLIENT_ID}
