@@ -42,6 +42,7 @@ declare -x ADDITIONAL_ODOO_RC="${ADDITIONAL_ODOO_RC:-}"
 #declare -x PGUSER=${DB_USER}
 #declare -x PGPASSWORD=${DB_PASSWORD}
 #declare -x PGDATABASE=${DB_NAME}
+declare -x ODOO_IMDISPATCHER_DB_PORT="${ODOO_IMDISPATCHER_DB_PORT:-5432}"
 declare -x SENTRY="${SENTRY:-False}"
 declare -x SENTRY_DSN="${SENTRY_DSN:-''}"
 declare -x SENTRY_RELEASE="${SENTRY_RELEASE:-}"
