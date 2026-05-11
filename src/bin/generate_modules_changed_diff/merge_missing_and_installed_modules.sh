@@ -45,7 +45,7 @@ gawk -F, '
     {
         # $1 nom du module
         # $2 version du module
-        if ($1 in updated) {
+        if ($1 in updated && $2 == "") {
             print $1 "," $2 "! missing"
         } else {
             print $1 "," $2
