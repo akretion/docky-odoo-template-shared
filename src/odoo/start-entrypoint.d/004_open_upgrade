@@ -50,11 +50,11 @@ then
     echo "START OPENUPGRADE MIGRATION"
 
     # echo "erase log before starting the"
-    rm -f /data/odoo/shared/migration.log
+    rm -f /data/odoo/shared/migration_to_${ODOO_VERSION}.log
     # exit on failure
     # it may fail if the migration is not ready yet
 
-    odoo --logfile=/data/odoo/shared/migration.log --update all --upgrade-path=/odoo/links/openupgrade_scripts/scripts --load=base,web,openupgrade_framework --stop-after-init || exit 1
+    odoo --logfile=/data/odoo/shared/migration_to_${ODOO_VERSION}.log --update all --upgrade-path=/odoo/links/openupgrade_scripts/scripts --load=base,web,openupgrade_framework --stop-after-init || exit 1
     echo "END OPENUPGRADE MIGRATION"
     echo -e "\e[0Ksection_end:$(date +%s):OpenUpgrade\r\e[0K"
     exit 0
