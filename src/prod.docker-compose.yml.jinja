@@ -57,6 +57,7 @@ services:
       - ~/data/${COMPOSE_PROJECT_NAME}/addons:/data/odoo/addons
       - ~/data/${COMPOSE_PROJECT_NAME}/filestore:/data/odoo/filestore
       - ~/data/${COMPOSE_PROJECT_NAME}/sessions:/data/odoo/sessions
+      - ~/data/${COMPOSE_PROJECT_NAME}/shared:/data/odoo/shared
     ports:
       - 8069:8069
       - 8072:8072
