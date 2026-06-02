@@ -125,3 +125,38 @@ def test_current_git_tag_mulitple():
             ret = cmd()
             # strip \n
             assert ret.strip() == "16.0.4"
+
+def test_new_git_tag_mulitple():
+    # ensure to always return the last tag
+    # when switching between branches
+
+    bin = current_git_tag()
+    with local.tempdir() as tmpdir:
+        with local.cwd(tmpdir):
+            create_a_git_dir()
+            local["git"]["checkout", "-b", "16.0"]()
+            git_touch_and_add("somefile")
+            git_touch_and_add("someotherfile")
+            git_tag("16.0.3")
+
+            cmd = local[bin]["16.0.0"]
+            ret = cmd()
+            assert ret.strip() == "16.0.3"
+
+            local["git"]["checkout", "--orphan", "17.0"]()
+            git_touch_and_add("somefile")
+
+            cmd = local[bin]["17.0.0"]
+            ret = cmd()
+            # strip \n
+            assert ret.strip() == "17.0.0"
+
+            git_tag("17.2.2")
+
+            local["git"]["checkout", "-b", "18.0"]()
+            git_touch_and_add("somefile_other")
+
+            cmd = local[bin]["18.0.0"]
+            ret = cmd()
+            # strip \n
+            assert ret.strip() == "18.0.0"
