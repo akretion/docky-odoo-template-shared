@@ -501,22 +501,22 @@ publish:
     - docker push $CI_REGISTRY_IMAGE:${CI_COMMIT_REF_SLUG}_latest
 
     # ensure modules changed exist
-    - touch modules_changed_nocolor.diff modules_changed.diff
+    - touch shared/modules_changed.diff
     # todo: get this from artifact instead of local cache
     # display it
-    - cat modules_changed.diff
-    - mv modules_changed.diff $CURRENT_PATH/odoo/
+    - cat shared/modules_changed.diff
+    - mv shared/modules_changed.diff $CURRENT_PATH/odoo/
 
     # generate a readme for the release
     # ensure file exist (generated in update_db)
     # if update_db is skiped this can provide wrong
     # results; colors are added by the markdown
-    - touch modules_changed_nocolor.diff
+    - touch shared/modules_changed_nocolor.diff
     # mind the simples quotes
     - echo '# Release' > release.md
     - echo "" >> release.md
     - echo '```diff' >> release.md
-    - cat modules_changed_nocolor.diff >> release.md
+    - cat shared/modules_changed_nocolor.diff >> release.md
     - echo '```' >> release.md
     - cp release.md $CURRENT_PATH/release.md
   release:
