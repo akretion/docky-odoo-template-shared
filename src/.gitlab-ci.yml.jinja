@@ -220,7 +220,7 @@ update_db:
     - CURRENT_PATH=`pwd`
     - cd ~gitlab-runner/builds/${AK_WORKING_DIR}
     # if there is a log, we copy it
-    - test -e "shared/migration.log" && cp shared/migration.log $CURRENT_PATH/migration.log
+    - test -e "shared/migration_to_{{ odoo_version }}.log" && cp shared/migration_to_{{ odoo_version }}.log $CURRENT_PATH/migration_to_{{ odoo_version }}.log
     # if there is a click odoo update log, we copy it
     - test -e "shared/click-odoo-update.log" && cp shared/click-odoo-update.log $CURRENT_PATH/click-odoo-update.log
 
@@ -230,10 +230,10 @@ update_db:
     - test -e "gl-code-quality-report.json" && cp gl-code-quality-report.json $CURRENT_PATH/gl-code-quality-report.json
 
     # and we display only a subset
-    - test -e "shared/migration.log" && echo "Display last 400 lines of migration log:"
-    - test -e "shared/migration.log" && tail shared/migration.log --lines 400
+    - test -e "shared/migration_to_{{ odoo_version }}.log" && echo "Display last 400 lines of migration log:"
+    - test -e "shared/migration_to_{{ odoo_version }}.log" && tail shared/migration_to_{{ odoo_version }}.log --lines 400
     # ensure migration.log can be added to artifacts
-    - touch $CURRENT_PATH/migration.log
+    - touch $CURRENT_PATH/migration_to_{{ odoo_version }}.log
   needs:
       # refresh_db do a docker compose stop, we don't want to be halted
       # if this job start sooner
@@ -248,7 +248,7 @@ update_db:
     when: always
     paths: [
       "click-odoo-update.log",
-      "migration.log",
+      "migration_to_{{ odoo_version }}.log",
       "modules_changed_nocolor.diff",
       "gl-code-quality-report.json",
     ]
