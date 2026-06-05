@@ -27,3 +27,6 @@ psql -d $DBNAME -ac "UPDATE res_users SET password='admin'"
 psql -d $DBNAME -ac "UPDATE ir_config_parameter SET value=4 WHERE key='auth_password_policy.minlength'"
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='rgba(0,0,255,.6)' WHERE key='ribbon.background.color'"
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value = regexp_replace(value, '^CI', 'Local') WHERE key = 'ribbon.name';"
+
+# the odoo way to make duplicated db leakless
+odoo neutralize
