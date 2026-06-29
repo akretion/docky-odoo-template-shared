@@ -22,6 +22,7 @@ services:
       - .db/data:/var/lib/postgresql/data/pgdata
     networks:
       - local
+    command: postgres -c shared_preload_libraries='pg_stat_statements'
   odoo:
     build:
       context: odoo
