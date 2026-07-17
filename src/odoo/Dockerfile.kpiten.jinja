@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Installer uv (gestionnaire de paquets utilisé par le projet)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
+
+# Cloner le dépôt dans le dossier kpiten (branche marimo)
+RUN git clone --branch marimo --single-branch \
+    https://github.com/akretion/kpiten.git kpiten
+
+# Installer marimo-kpiten en mode éditable
+RUN uv pip install --system -e kpiten/marimo-kpiten
+
+# Exposer le port de marimo (et uvicorn/fastapi si besoin)
+EXPOSE 5000
+
+WORKDIR kpiten/marimo-kpiten/src/marimo_kpiten/
+
+ENTRYPOINT ["uv", "run", "main.py"]

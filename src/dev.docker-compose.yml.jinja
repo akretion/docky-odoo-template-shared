@@ -31,7 +31,11 @@ services:
     environment:
       # sentry and bus_alt_connection are not necessary on dev
       # you may want to add queue_job here
-      SERVER_WIDE_MODULES: web
+      {% if kpiten %} 
+      # base is required for JSON-RPC to work properly (else /jsonrpc never gets registered, 
+      # only /odoo/jsonrpc, which is not used by odoorpc) 
+      {% endif %}
+      SERVER_WIDE_MODULES: "web{% if kpiten %},base{% endif %}"
 
       # DB_ and PG specified because entrypoint is not always ran if docker exec
       DB_USER: odoo

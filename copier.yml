@@ -39,6 +39,9 @@ odoo_version:
   default: "{{branch_name}}"
   when: false
 
+kpiten:
+  type: bool
+  help: Include kpiten in this project ?
 
 is_intermediate_version:
   # set migration stuff
