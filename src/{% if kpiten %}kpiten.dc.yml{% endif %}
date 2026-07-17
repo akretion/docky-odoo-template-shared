@@ -12,7 +12,7 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.rule=Host(`${COMPOSE_PROJECT_NAME}-kpiten.localhost`)"
-      - "docky.help=http://${COMPOSE_PROJECT_NAME}-kpiten.localhost:5000"
+      - "docky.help=http://${COMPOSE_PROJECT_NAME}-kpiten.localhost"
       - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}kpitenheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.middlewares=${COMPOSE_PROJECT_NAME}adminerheaders"
     # environment:

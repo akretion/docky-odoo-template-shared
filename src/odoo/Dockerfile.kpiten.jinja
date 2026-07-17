@@ -7,19 +7,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Installer uv (gestionnaire de paquets utilisé par le projet)
+# Download uv from source (kpiten doesn't use PIP)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
 
-# Cloner le dépôt dans le dossier kpiten (branche marimo)
+# Cloning marimo branch only
 RUN git clone --branch marimo --single-branch \
     https://github.com/akretion/kpiten.git kpiten
 
-# Installer marimo-kpiten en mode éditable
+# installing marimo-kpiten in editable mode
 RUN uv pip install --system -e kpiten/marimo-kpiten
 
-# Exposer le port de marimo (et uvicorn/fastapi si besoin)
-EXPOSE 5000
+# marimo kpiten's FastAPI uses port 5000.
+EXPOSE 5000/tcp
 
 WORKDIR kpiten/marimo-kpiten/src/marimo_kpiten/
 
