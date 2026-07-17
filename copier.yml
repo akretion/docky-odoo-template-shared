@@ -41,7 +41,7 @@ odoo_version:
 
 kpiten:
   type: bool
-  help: Include kpiten in this project ?
+  help: Include kpiten BI tool in this project ?
 
 is_intermediate_version:
   # set migration stuff
