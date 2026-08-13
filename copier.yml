@@ -39,10 +39,6 @@ odoo_version:
   default: "{{branch_name}}"
   when: false
 
-kpiten:
-  type: bool
-  help: Include kpiten BI tool in this project ?
-
 is_intermediate_version:
   # set migration stuff
   type: bool
@@ -83,14 +79,26 @@ next_templates:
 #   # true to be sure
 #   - rm --interactive=never -rf {{branch_name}}/odoo/local-src/.github
 
+kpiten:
+  type: bool
+  help: Include kpiten Odoo BI tool in this project ?
+
 _skip_if_exists:
   - frozen.yaml
   - README.md # TODO how to manage readme ?
   - odoo/local-src/*
   - odoo/spec.yaml
+  - odoo/spec-kpiten.yaml
   - odoo/requirements.txt
   - odoo/setup.py
   - clear-ci.secrets.docker-compose.yml
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml
   - .copier-answers-personal.yml
+
+_message_after_copy: |
+{% if kpiten %}
+  Finalisation de l'installation de Kpiten:
+    - Copier le contenu de spec-kpiten.yaml dans le fichier spec.yaml depuis le dossier Odoo
+    - Personnaliser le contenu de .env.kpiten
+{% endif %}

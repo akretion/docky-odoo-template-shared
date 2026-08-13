@@ -14,8 +14,6 @@ services:
       - "docky.help=http://${COMPOSE_PROJECT_NAME}-kpiten.localhost"
       - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}kpitenheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.middlewares=${COMPOSE_PROJECT_NAME}adminerheaders"
-    # environment:
-    #   - ADMINER_PLUGINS=json-column tables-filter
     env_file: .env.kpiten
     ports:
       - 5000:5000
