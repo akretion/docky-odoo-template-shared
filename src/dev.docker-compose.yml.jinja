@@ -4,7 +4,13 @@ networks:
   local:
 services:
   db:
+    {%- if odoo_version <= "18.0" %}
     image: postgres:16
+    {%- elif odoo_version == "19.0" %}
+    image: ghcr.io/akretion/docker-postgresql:18
+    {%- elif odoo_version == "20.0" %}
+    image: ghcr.io/akretion/docker-postgresql:19
+    {%- endif %}
     # UID and GID should be defined
     # and .db/data created with UID rights (better)
     # or UID and GID not defined and .db not existing
