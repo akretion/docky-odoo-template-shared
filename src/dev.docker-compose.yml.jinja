@@ -4,7 +4,7 @@ networks:
   local:
 services:
   db:
-    image: postgres:16
+    image: ghcr.io/akretion/docker-postgresql:16
     # UID and GID should be defined
     # and .db/data created with UID rights (better)
     # or UID and GID not defined and .db not existing
