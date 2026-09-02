@@ -56,6 +56,11 @@ stages:
 before_script:
   # TODO: manage mulitple preprod ?
   # ref-commit slug ?
+{% if use_variable_from_description %}
+  - ./bin/extract_mr_variable_env.py
+  - cat mr_variable.sh
+  - source mr_variable.sh
+{% endif %}
   - echo $AK_WORKING_DIR
   - echo $AK_BASE_CACHE_DIR
   - echo $AK_IS_MR

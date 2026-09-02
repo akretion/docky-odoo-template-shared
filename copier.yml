@@ -56,6 +56,10 @@ org_name:
   # but allow to change it manually
   when: false
 
+use_variable_from_description:
+  type: bool
+  help: Allow to pass advanced variable from PR description
+
 next_templates:
   help: "Next templates to run. template path args"
   # syntax:
@@ -91,3 +95,4 @@ _skip_if_exists:
   - clear-prod.secrets.docker-compose.yml
   - secrets.docker-compose.yml
   - .copier-answers-personal.yml
+  - .gitlab/merge_request_templates/with_variable.md
