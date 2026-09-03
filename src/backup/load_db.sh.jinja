@@ -27,6 +27,8 @@ psql -d $DBNAME -ac "UPDATE res_users SET password='admin'"
 psql -d $DBNAME -ac "UPDATE ir_config_parameter SET value=4 WHERE key='auth_password_policy.minlength'"
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='rgba(0,0,255,.6)' WHERE key='ribbon.background.color'"
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value = regexp_replace(value, '^CI', 'Local') WHERE key = 'ribbon.name';"
+echo 'Last date in mail_tracking_value:'
+psql -d "${DBNAME}" -ac "SELECT max(write_date) AS \"Last date in mail_tracking_value\" FROM mail_tracking_value"
 
 # the odoo way to make duplicated db leakless
 odoo neutralize
