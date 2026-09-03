@@ -1,0 +1,24 @@
+services:
+  odoo:
+    links:
+      - kpiten
+  kpiten:
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: ./odoo/Dockerfile.kpiten
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.rule=Host(`${COMPOSE_PROJECT_NAME}-kpiten.localhost`)"
+      - "docky.help=http://${COMPOSE_PROJECT_NAME}-kpiten.localhost"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}kpitenheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.middlewares=${COMPOSE_PROJECT_NAME}adminerheaders"
+    env_file: .env.kpiten
+    ports:
+      - 5000:5000
+    links:
+      - db
+    networks:
+      - local
+      - traefik

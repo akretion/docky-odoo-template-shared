@@ -1,0 +1,16 @@
+# Add these lines to your spec.yaml and afterwards you may delete this file
+kpiten:
+    modules:
+        - kpiten
+        # This is the common module to all branch
+    src: https://github.com/akretion/kpiten odoo
+{% if odoo_version != '18.0' %}
+        - sed -i 's/18\.0/{{ odoo_version.replace(".", "\.") }}/' kpiten/__manifest__.py
+        - git add . && git commit -m "version upgrade"
+{% endif %}
+
+kpiten-override:
+    modules:
+        - kpiten_override
+        # This module contains specific code by version, mainly xml
+    src: https://github.com/akretion/kpiten {{ odoo_version }}

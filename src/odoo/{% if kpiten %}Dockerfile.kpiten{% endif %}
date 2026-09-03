@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Download uv from source (kpiten doesn't use PIP)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:/root/.local/bin:$PATH"
+
+# Cloning marimo branch only
+RUN git clone --branch marimo --single-branch \
+    https://github.com/akretion/kpiten.git kpiten
+
+# installing marimo-kpiten in editable mode
+RUN uv pip install --system -e kpiten/marimo-kpiten
+
+# marimo kpiten's FastAPI uses port 5000.
+EXPOSE 5000/tcp
+
+WORKDIR kpiten/marimo-kpiten/src/marimo_kpiten/
+
+ENTRYPOINT ["uv", "run", "main.py"]
