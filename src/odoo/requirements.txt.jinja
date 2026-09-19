@@ -2,7 +2,7 @@
 pyjwt # auth_oidc
 python-jose[cryptography] # auth_oidc
 
-{% if branch_name in ("18.0", "19.0") %}
+{% if branch_name in ("18.0", "19.0", "20.0") %}
 sentry-sdk>=2.0.0,<=2.22.0
 {% else %}
 #sentry 1.9.0 for 14.0 to 17.0

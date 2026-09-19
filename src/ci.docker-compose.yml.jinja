@@ -71,7 +71,9 @@ services:
           # create shared dir if needed
           create_host_path: true
   bedrock:
-    image: ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest
+{% if odoo_version == "20.0" %}    # ghcr.io/akretion/odoo-docker:20.0-light-latest is not published yet,
+    # the 19.0-light one is used in the meantime
+{% endif %}    image: ghcr.io/akretion/odoo-docker:{{ "19.0" if odoo_version == "20.0" else odoo_version }}-light-latest
     profiles: [db]
     environment:
       DB_NAME: ${BUILD_NAME}
