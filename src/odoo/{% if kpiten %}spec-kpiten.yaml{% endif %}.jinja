@@ -8,9 +8,10 @@ kpiten:
     - kpiten_marimo
   # one source for all the series : the views are written for Odoo 18
   src: https://github.com/akretion/kpiten odoo-multiversion
-{% if odoo_version != '18.0' %}
-  # ... and converted to {{ odoo_version }} by scripts/downgrade.py (the manifest versions too)
+{%- if branch_name in ("14.0", "15.0", "16.0", "17.0") %}
+
+  # ... and converted to {{ branch_name }} by scripts/downgrade.py (the manifest versions too)
   shell_command_after:
-    - python3 scripts/downgrade.py {{ odoo_version }}
-    - git add . && git commit -m "downgrade to {{ odoo_version }}"
-{% endif %}
+    - python3 scripts/downgrade.py {{ branch_name }}
+    - git add . && git commit -m "downgrade to {{ branch_name }}"
+{%- endif %}
