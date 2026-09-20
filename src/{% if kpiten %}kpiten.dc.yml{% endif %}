@@ -1,24 +1,88 @@
+# KpiTen : the three fronts of the dashboards (Shiny, NiceGUI, marimo) on the data of the Odoo of
+# this project, one service per front : the menu of Odoo opens the one you choose (system parameter
+# kpiten_<front>_service, set by the `data/neutralize.sql` of the module of the front, see README).
+# Addresses : http://${COMPOSE_PROJECT_NAME}-<front>.localhost (traefik).
+#
+# Activation : kpiten.dc.yml is listed in COMPOSE_FILE of .env (done by .env-dev), then `docky build`
+# and `docky up`. One front only : `docker compose up -d --no-deps kpiten-nicegui`.
+#
+# docky : the main service stays odoo ; the commands of another service take --service
+#   (`docky logs --service=kpiten-nicegui`, `docky restart --service=kpiten-marimo`).
+#
+# The fronts read Odoo through /jsonrpc, a route of the module `base` : it must be a server-wide
+# module (SERVER_WIDE_MODULES of dev.docker-compose.yml).
+x-kpiten: &kpiten
+  restart: on-failure
+  # like odoo : the files of the data volume must belong to the user (UID/GID of the .env)
+  user: "${UID:-1000}:${GID:-1000}"
+  env_file: .env.kpiten
+  environment:
+    ODOO_PWD: ${KPITEN_ODOO_PWD:-admin}
+  volumes:
+    # the parquets (DATA_PATH = /data/odoo/shared/kpiten, see .env.kpiten), in the data dir of the
+    # project, next to the filestore of odoo ; the three fronts read the same ones
+    - ./data/shared:/data/odoo/shared
+  links:
+    - db
+  networks:
+    - local
+    - traefik
+
 services:
   odoo:
     links:
-      - kpiten
-  kpiten:
-    restart: on-failure
+      - kpiten-shiny
+      - kpiten-nicegui
+      - kpiten-marimo
+
+  kpiten-shiny:
+    <<: *kpiten
     build:
-      context: .
-      dockerfile: ./odoo/Dockerfile.kpiten
+      # the context is kpiten/ (not the root of the project, which holds .db, data, external-src)
+      context: ./kpiten
+      args:
+        FRONT: shiny
+    image: ${PROJECT_NAME}-kpiten-shiny
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.rule=Host(`${COMPOSE_PROJECT_NAME}-kpiten.localhost`)"
-      - "docky.help=http://${COMPOSE_PROJECT_NAME}-kpiten.localhost"
-      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}kpitenheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
-      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-kpiten.middlewares=${COMPOSE_PROJECT_NAME}adminerheaders"
-    env_file: .env.kpiten
-    ports:
-      - 5000:5000
-    links:
-      - db
-    networks:
-      - local
-      - traefik
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-shiny.rule=Host(`${COMPOSE_PROJECT_NAME}-shiny.localhost`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-shiny.service=${COMPOSE_PROJECT_NAME}shiny"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}shiny.loadbalancer.server.port=5000"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}shinyheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-shiny.middlewares=${COMPOSE_PROJECT_NAME}shinyheaders"
+      - "docky.help=http://${COMPOSE_PROJECT_NAME}-shiny.localhost"
+
+  kpiten-nicegui:
+    <<: *kpiten
+    build:
+      context: ./kpiten
+      args:
+        FRONT: nicegui
+    image: ${PROJECT_NAME}-kpiten-nicegui
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-nicegui.rule=Host(`${COMPOSE_PROJECT_NAME}-nicegui.localhost`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-nicegui.service=${COMPOSE_PROJECT_NAME}nicegui"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}nicegui.loadbalancer.server.port=5001"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}niceguiheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-nicegui.middlewares=${COMPOSE_PROJECT_NAME}niceguiheaders"
+      - "docky.help=http://${COMPOSE_PROJECT_NAME}-nicegui.localhost"
+
+  kpiten-marimo:
+    <<: *kpiten
+    build:
+      context: ./kpiten
+      args:
+        FRONT: marimo
+    image: ${PROJECT_NAME}-kpiten-marimo
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-marimo.rule=Host(`${COMPOSE_PROJECT_NAME}-marimo.localhost`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-marimo.service=${COMPOSE_PROJECT_NAME}marimo"
+      - "traefik.http.services.${COMPOSE_PROJECT_NAME}marimo.loadbalancer.server.port=5002"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}marimoheaders.headers.customrequestheaders.X-Forwarded-Proto=http"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-marimo.middlewares=${COMPOSE_PROJECT_NAME}marimoheaders"
+      - "docky.help=http://${COMPOSE_PROJECT_NAME}-marimo.localhost"

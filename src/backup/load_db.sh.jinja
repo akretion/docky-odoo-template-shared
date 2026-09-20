@@ -28,5 +28,10 @@ psql -d $DBNAME -ac "UPDATE ir_config_parameter SET value=4 WHERE key='auth_pass
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='rgba(0,0,255,.6)' WHERE key='ribbon.background.color'"
 psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value = regexp_replace(value, '^CI', 'Local') WHERE key = 'ribbon.name';"
 
+{% if kpiten %}
+# the copy is served by this stack : the neutralize.sql of the kpiten modules build the address
+# of the fronts (http://<project>-<front>.localhost) from the base url
+psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='http://{{ project_name }}.localhost' WHERE key='web.base.url'"
+{% endif %}
 # the odoo way to make duplicated db leakless
 odoo neutralize

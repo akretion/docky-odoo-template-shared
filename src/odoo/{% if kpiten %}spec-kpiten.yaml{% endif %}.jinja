@@ -1,16 +1,16 @@
 # Add these lines to your spec.yaml and afterwards you may delete this file
 kpiten:
-    modules:
-        - kpiten
-        # This is the common module to all branch
-    src: https://github.com/akretion/kpiten odoo
+  modules:
+    - kpiten
+    - kpiten_data
+    - kpiten_shiny
+    - kpiten_nicegui
+    - kpiten_marimo
+  # one source for all the series : the views are written for Odoo 18
+  src: https://github.com/akretion/kpiten odoo-multiversion
 {% if odoo_version != '18.0' %}
-        - sed -i 's/18\.0/{{ odoo_version.replace(".", "\.") }}/' kpiten/__manifest__.py
-        - git add . && git commit -m "version upgrade"
+  # ... and converted to {{ odoo_version }} by scripts/downgrade.py (the manifest versions too)
+  shell_command_after:
+    - python3 scripts/downgrade.py {{ odoo_version }}
+    - git add . && git commit -m "downgrade to {{ odoo_version }}"
 {% endif %}
-
-kpiten-override:
-    modules:
-        - kpiten_override
-        # This module contains specific code by version, mainly xml
-    src: https://github.com/akretion/kpiten {{ odoo_version }}

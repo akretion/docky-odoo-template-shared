@@ -81,7 +81,7 @@ next_templates:
 
 kpiten:
   type: bool
-  help: Include kpiten Odoo BI tool in this project ?
+  help: Include KpiTen (dashboards and KPI on the data of Odoo, three fronts) in this project ?
 
 _skip_if_exists:
   - frozen.yaml
@@ -98,7 +98,12 @@ _skip_if_exists:
 
 _message_after_copy: |
 {% if kpiten %}
-  Finalisation de l'installation de Kpiten:
-    - Copier le contenu de spec-kpiten.yaml dans le fichier spec.yaml depuis le dossier Odoo
-    - Personnaliser le contenu de .env.kpiten
+  KpiTen (dashboards on the data of Odoo) : to finish
+    - copy the content of odoo/spec-kpiten.yaml in odoo/spec.yaml, then delete it
+    - Odoo 18 and more : add git+https://github.com/akretion/kpiten.git@kpiten-core to
+      odoo/requirements.txt (the structural validation of the tiles ; the older series go without)
+    - docky build, docky up, then install the modules kpiten, kpiten_data and the fronts you want
+      (kpiten_shiny, kpiten_nicegui, kpiten_marimo)
+    - the address of the fronts is set by `odoo neutralize` : after `sh load_db`, or by hand on the
+      current database : docky run odoo neutralize
 {% endif %}
