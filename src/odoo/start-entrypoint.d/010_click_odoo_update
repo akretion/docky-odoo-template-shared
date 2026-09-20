@@ -13,7 +13,9 @@ then
     exit 0
 fi
 
-IS_DB_INCOMPATIBLE=$(python -c "from odoo import service; print(len(service.db.list_db_incompatible(('$DB_NAME',))) > 0)")
+# reuse Odoo's own list_db_incompatible, wherever it is exposed
+# (odoo.service.db up to 19, odoo.addons.web.controllers.database from 20)
+IS_DB_INCOMPATIBLE=$(python /odoo/scripts/is_db_incompatible.py "$DB_NAME")
 
 if [ $IS_DB_INCOMPATIBLE == "True" ]
 then

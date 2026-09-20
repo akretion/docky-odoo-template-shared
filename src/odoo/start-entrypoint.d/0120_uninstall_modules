@@ -12,8 +12,10 @@ then
     exit 0
 fi
 
-DB_INCOMPATIBLE=$(python -c "from odoo import service; print(len(service.db.list_db_incompatible(('$DB_NAME',))))")
-if [ $DB_INCOMPATIBLE = 1 ]
+# reuse Odoo's own list_db_incompatible, wherever it is exposed
+# (odoo.service.db up to 19, odoo.addons.web.controllers.database from 20)
+DB_INCOMPATIBLE=$(python /odoo/scripts/is_db_incompatible.py "$DB_NAME")
+if [ "$DB_INCOMPATIBLE" = "True" ]
 then
     echo "Database $DB_NAME has a different major odoo version than the code, ignoring script"
     exit 0
