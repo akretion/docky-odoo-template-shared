@@ -60,3 +60,27 @@ On gitlab, mark the branch as protected
 # Bump and Migration
 
 From the gitlab pipeline, run the "publish" job to create an updated docker image
+
+
+# KpiTen (optional)
+
+Answer `yes` to the `kpiten` question to get [KpiTen](https://github.com/akretion/kpiten), the
+dashboards and KPI on the data of the Odoo of the project (the rights of the user connected to Odoo
+apply). It adds :
+
+- `kpiten.dc.yml` : one service per front (Shiny :5000, NiceGUI :5001, marimo :5002), built from
+  `kpiten/Dockerfile`, on http://PROJECT_NAME-shiny.localhost, `-nicegui`, `-marimo` (traefik) ;
+  the fronts read Odoo through `/jsonrpc` (so `base` is a server-wide module of the dev stack) and
+  Postgres directly ; their parquets are in `data/shared/kpiten` ;
+- `.env.kpiten` : the environment of the fronts (tracked by git, no secret : the password of the
+  Odoo account they use is `KPITEN_ODOO_PWD` of the `.env`, `admin` by default) ;
+- `odoo/spec-kpiten.yaml` : the `kpiten` entry to copy in `odoo/spec.yaml` (the branch
+  `odoo-multiversion` is one source for all the series, `scripts/downgrade.py` converts it).
+
+The address of each front is a system parameter (`kpiten_<front>_service`). No
+`server_environment_files` needed : the `data/neutralize.sql` of `kpiten_shiny`, `kpiten_nicegui`
+and `kpiten_marimo` set it for the docky stack when the database is neutralized
+(`odoo neutralize`, already the last step of `backup/load_db.sh`, which first sets `web.base.url`
+to http://PROJECT_NAME.localhost). On a database that was not restored, run it by hand :
+`docky run odoo neutralize`. For the other environments set the parameters as usual (the public
+url of the front in `external_url`, `http://kpiten-<front>:<port>` in `internal_url`).

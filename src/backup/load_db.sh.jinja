@@ -30,5 +30,10 @@ psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value = regexp_replace(val
 # last date in db
 psql -d "$DBNAME" -ac 'SELECT max(write_date) AS "Last date in mail_tracking_value" FROM mail_tracking_value'
 
+{% if kpiten %}
+# the copy is served by this stack : the neutralize.sql of the kpiten modules build the address
+# of the fronts (http://<project>-<front>.localhost) from the base url
+psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='http://{{ project_name }}.localhost' WHERE key='web.base.url'"
+{% endif %}
 # the odoo way to make duplicated db leakless
 odoo neutralize
