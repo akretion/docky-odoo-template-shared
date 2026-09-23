@@ -27,7 +27,7 @@ echo -e "\e[0Ksection_start:$(date +%s):Click Odoo Update\r\e[0K\e[32m--- Start 
 rm -f /data/odoo/shared/click-odoo-update.log
 
 echo "START UPDATING USING CLICK ODOO"
-click-odoo-update --i18n-overwrite 2>&1 | tee /data/odoo/shared/click-odoo-update.log || exit 1
+click-odoo-update -d $DB_NAME --i18n-overwrite 2>&1 | tee /data/odoo/shared/click-odoo-update.log || exit 1
 echo "END UPDATING USING CLICK ODOO"
 
 echo -e "\e[0Ksection_end:$(date +%s):Click Odoo Update\r\e[0K"
