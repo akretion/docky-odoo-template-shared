@@ -46,6 +46,11 @@ is_intermediate_version:
   default: false
   when: false
 
+use_github_ci:
+  type: bool
+  help: Set up GitHub CI workflows (pre-commit, tests)
+  default: false
+
 org_name:
   type: str
   default: Akretion
