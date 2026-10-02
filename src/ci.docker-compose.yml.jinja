@@ -4,6 +4,7 @@ services:
     build:
       context: ./odoo
       target: prod
+      network: host
     image: "${BUILD_NAME}"
     environment:
       ODOO_BASE_URL: https://${DOMAIN}
