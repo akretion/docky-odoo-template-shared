@@ -2,6 +2,10 @@
 addons_path = ${ADDONS_PATH}
 data_dir = /data/odoo
 db_template = ${DB_TEMPLATE}
+; new in Odoo 20 (odoo/odoo@d5b12102): database used for the shared system
+; operations - bus notifications, cron triggers, database creation/drop -
+; it was hardcoded to 'postgres' before
+db_system = ${DB_SYSTEM}
 db_host = ${DB_HOST}
 db_port = ${DB_PORT}
 db_replica_host = ${DB_REPLICA_HOST}
@@ -27,6 +31,8 @@ log_handler = ${LOG_HANDLER}
 log_level = ${LOG_LEVEL}
 max_cron_threads = ${MAX_CRON_THREADS}
 workers = ${WORKERS}
+; new in Odoo 20 (gevent workers in prefork mode, requires SO_REUSEPORT)
+gevent_workers = ${GEVENT_WORKERS}
 logfile = ${LOGFILE}
 log_db = ${LOG_DB}
 syslog = ${SYSLOG}

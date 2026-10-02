@@ -1,5 +1,9 @@
 declare -x ADDONS_PATH="${ADDONS_PATH:-}"
 declare -x DB_TEMPLATE="${DB_TEMPLATE:-template1}"
+# db_system is new in Odoo 20 (odoo/odoo@d5b12102): database used for the
+# shared system operations - bus notifications, cron triggers, database
+# creation/drop - it was hardcoded to 'postgres' before
+declare -x DB_SYSTEM="${DB_SYSTEM:-postgres}"
 declare -x DB_HOST="${DB_HOST:-}"
 declare -x DB_PORT="${DB_PORT:-5432}"
 declare -x DB_REPLICA_HOST="${DB_REPLICA_HOST:-None}"
@@ -25,6 +29,9 @@ declare -x LOG_HANDLER="${LOG_HANDLER:-':INFO'}"
 declare -x LOG_LEVEL="${LOG_LEVEL:-info}"
 declare -x MAX_CRON_THREADS="${MAX_CRON_THREADS:-2}"
 declare -x WORKERS="${WORKERS:-4}"
+# gevent_workers is new in Odoo 20
+# (number of gevent workers in prefork mode, requires SO_REUSEPORT)
+declare -x GEVENT_WORKERS="${GEVENT_WORKERS:-1}"
 declare -x LOGFILE="${LOGFILE:-None}"
 declare -x LOG_DB="${LOG_DB:-}"
 declare -x SYSLOG="${SYSLOG:-False}"
