@@ -53,12 +53,6 @@ unaccent = ${UNACCENT}
 
 imdispatcher_db_port = 5432
 
-sentry_enabled = ${SENTRY}
-sentry_environment = ${RUNNING_ENV}
-sentry_dsn = ${SENTRY_DSN}
-sentry_release = ${SENTRY_RELEASE}
-sentry_traces_sample_rate = ${SENTRY_TRACES_SAMPLE_RATE}
-
 encryption_key_dev=${ENCRYPTION_KEY_DEV}
 encryption_key_ci=${ENCRYPTION_KEY_CI}
 encryption_key_prod=${ENCRYPTION_KEY_PROD}
@@ -72,3 +66,10 @@ ${ADDITIONAL_ODOO_RC}
 [auth_oauth_provider.Akretion]
 client_id=${AUTH_OAUTH_PROVIDER_CLIENT_ID}
 client_secret=${AUTH_OAUTH_PROVIDER_CLIENT_SECRET}
+
+[sentry]
+sentry_enabled = ${SENTRY}
+sentry_environment = ${RUNNING_ENV}
+sentry_dsn = ${SENTRY_DSN}
+sentry_release = ${SENTRY_RELEASE}
+sentry_traces_sample_rate = ${SENTRY_TRACES_SAMPLE_RATE}
