@@ -1,0 +1,59 @@
+# syntax=docker/dockerfile:1.4
+FROM ghcr.io/astral-sh/uv:latest AS uv_bin
+FROM ghcr.io/akretion/odoo-docker:{{ odoo_version }}-light-latest as base
+
+# There is a high chance that multiple projects
+# share the same odoo/src/requirements.txt
+# install odoo requirements first
+
+COPY --from=uv_bin /uv /uvx /bin/
+ENV UV_CHECK_UPDATE=never
+
+RUN mkdir -p /odoo/src/odoo/addons /data/odoo/shared
+
+COPY ./src/setup /odoo/src/setup
+COPY ./src/setup.py /odoo/src/setup.py
+
+COPY ./src/odoo/*.py /odoo/src/odoo/
+COPY ./src/odoo/cli /odoo/src/odoo/cli
+COPY ./src/odoo/modules /odoo/src/odoo/modules
+COPY ./src/odoo/release.py /odoo/src/odoo/release.py
+COPY ./src/odoo/service /odoo/src/odoo/service
+COPY ./src/odoo/tests /odoo/src/odoo/tests
+COPY ./src/odoo/tools /odoo/src/odoo/tools
+COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python /odoo/bin/python -e /odoo/src
+
+FROM base as thisproject
+COPY ./requirements.txt /odoo/requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -r /odoo/requirements.txt
+
+ENV ADDONS_PATH=/odoo/src/odoo/addons,/odoo/src/addons,/odoo/links,/odoo/local-src
+
+COPY ./start-entrypoint.d /odoo/start-entrypoint.d
+COPY ./scripts /odoo/scripts
+COPY ./templates /odoo/templates
+
+
+FROM thisproject as dev
+
+# allow to pip install anything temporary
+COPY ./dev_requirements.txt /odoo/dev_requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install -r /odoo/dev_requirements.txt
+
+# Install fish shell
+RUN --mount=type=cache,target=/var/cache/apt apt-get update && apt-get install -y --no-install-recommends fish
+
+FROM thisproject as prod
+ARG SENTRY_RELEASE=0.0.0
+COPY ./src /odoo/src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --no-deps -e /odoo/src
+COPY ./external-src /odoo/external-src
+COPY ./links /odoo/links
+COPY ./local-src /odoo/local-src
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
