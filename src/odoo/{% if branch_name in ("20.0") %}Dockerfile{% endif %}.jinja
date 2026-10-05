@@ -23,8 +23,9 @@ COPY ./src/odoo/tests /odoo/src/odoo/tests
 COPY ./src/odoo/tools /odoo/src/odoo/tools
 COPY ./src/odoo/upgrade /odoo/src/odoo/upgrade
 
+# editable_mode=compat is really much faster
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --python /odoo/bin/python -e /odoo/src
+    uv pip install --config-setting editable_mode=compat -e /odoo/src
 
 FROM base as thisproject
 COPY ./requirements.txt /odoo/requirements.txt
@@ -51,8 +52,10 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && apt-get install -
 FROM thisproject as prod
 ARG SENTRY_RELEASE=0.0.0
 COPY ./src /odoo/src
+# editable_mode=compat is really much faster
+# --no-deps reuse the cache from previous layer
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install --no-deps -e /odoo/src
+    uv pip install --config-setting editable_mode=compat --no-deps -e /odoo/src
 COPY ./external-src /odoo/external-src
 COPY ./links /odoo/links
 COPY ./local-src /odoo/local-src
