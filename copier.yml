@@ -20,8 +20,8 @@ project_name:
   type: str
   help: Project Name
   validator: >-
-    {% if not (project_name | regex_search('^[a-z][a-z0-9-]+$')) %}
-    Use lowercase letters, digits, and dashes; start with a letter.
+    {% if not (project_name | regex_search('^[a-z0-9-]+$')) %}
+    Use lowercase letters, digits, and dashes
     {% endif %}
 
 branch_name:
