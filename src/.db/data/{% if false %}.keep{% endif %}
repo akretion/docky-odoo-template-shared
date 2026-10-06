@@ -1,0 +1,2 @@
+for pg: data directory should be empty and owned by current user (UID/GID)
+git don't like empty directory
