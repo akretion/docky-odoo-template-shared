@@ -47,7 +47,7 @@ services:
       DB_USER:  {{ project_name }}
       DB_HOST:
       PGHOST:
-{% if branch_name == "20.0" %}
+{% if branch_name != "20.0" %}
       # use pgbouncer
       DB_PORT: 6432
       PGPORT: 6432
