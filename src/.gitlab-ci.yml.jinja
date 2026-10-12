@@ -396,6 +396,8 @@ review:
   needs:
     - job: "update_db"
       optional: true
+    - job: "publish_db"
+      optional: true
     - job: "build"
       optional: true
   rules:
@@ -438,6 +440,8 @@ review_preprod:
     - if: $AK_IS_MAJOR_BRANCH == "true"
   needs:
     - job: "update_db"
+      optional: true
+    - job: "publish_db"
       optional: true
     - job: "build"
       optional: true
