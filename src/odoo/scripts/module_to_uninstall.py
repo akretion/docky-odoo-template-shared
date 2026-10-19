@@ -4,4 +4,4 @@
 # The modules will be uninstalled by start entrypoint script
 MODULE_LIST = []
 if MODULE_LIST:
-    print(str(MODULE_LIST).replace("[", "(").replace("]", ")"))
+    print(str(MODULE_LIST).replace("[", "(").replace("]", ")"))  # pylint: disable=W8116
