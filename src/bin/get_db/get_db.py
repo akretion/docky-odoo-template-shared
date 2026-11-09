@@ -28,7 +28,7 @@ def parse_args(args):
     parser.add_argument(
         "--migration",
         action="store_true",
-        help="Is an open upgrade migration" "a %_to_migrate template will be used",
+        help="Is an open upgrade migration a *_to_migrate template will be used",
     )
     # optionnal
     parser.add_argument(
