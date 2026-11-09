@@ -441,6 +441,10 @@ review_preprod:
       optional: true
     - job: "build"
       optional: true
+    # Technical dependency because publish_db could start at the same time and we'd
+    # have conflic between docker compose up -d here and docker compose down on publish_db
+    - job: "publish_db"
+      optional: true
 
 prepare_release:
   stage: deploy
