@@ -1,13 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ----------------------------------------------------
 # get_db – get database dump locally from CI
 #
-# This script creates a PostgreSQL dump of the project's
-# database on the CI runner, copies the resulting
-# dump file to the local machine.
+# This script copies the PostgreSQL dump of the project's
+# database from the CI runner to the local machine.
 #
 # Usage from outside container:
 #   sh get_db
 # ---------------------------------------------
-rm -f "{{ project_name }}".dump
-tsh scp --login=gitlab-runner --proxy=teleport.akretion.com:443 "{{ project_name }}"-ci:/home/gitlab-runner/backup/"{{ project_name }}".dump .
+set -euxo pipefail
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+readonly script_dir
+
+rm -f "${script_dir}"/"{{ project_name }}".dump
+tsh scp --login=gitlab-runner --proxy=teleport.akretion.com:443 "{{ project_name }}"-ci:/home/gitlab-runner/backup/"{{ project_name }}".dump "${script_dir}"/

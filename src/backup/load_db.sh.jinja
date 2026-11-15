@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ------------------------------------------------------
 # load_db – Database restore script
 #
@@ -18,17 +18,24 @@
 # Usage from inside container:
 #   sh load_db
 # ---------------------------------------------
-DBNAME="${1:-db}"
-dropdb $DBNAME --if-exist
-createdb $DBNAME
-pg_restore -j 8 -d $DBNAME "{{ project_name }}".dump --no-owner
-psql -d $DBNAME -ac "UPDATE ir_cron set active=False"
-psql -d $DBNAME -ac "UPDATE res_users SET password='admin'"
-psql -d $DBNAME -ac "UPDATE ir_config_parameter SET value=4 WHERE key='auth_password_policy.minlength'"
-psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value='rgba(0,0,255,.6)' WHERE key='ribbon.background.color'"
-psql -d "$DBNAME" -ac "UPDATE ir_config_parameter SET value = regexp_replace(value, '^CI', 'Local') WHERE key = 'ribbon.name';"
-# last date in db
-psql -d "$DBNAME" -ac 'SELECT max(write_date) AS "Last date in mail_tracking_value" FROM mail_tracking_value'
+set -uxo pipefail
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd -P)
+readonly script_dir
 
+DBNAME="${1:-${DATABASE:-db}}"
+dropdb "${DBNAME}" --if-exist
+createdb "${DBNAME}"
+pg_restore -j 8 -d "${DBNAME}" "${script_dir}"/"{{ project_name }}".dump --no-owner
+psql -d"${DBNAME}"-ac "UPDATE res_users SET password='admin'"
+psql -d"${DBNAME}"-ac "UPDATE ir_config_parameter SET value=4 WHERE key='auth_password_policy.minlength'"
+psql -d "${DBNAME}" -ac "UPDATE ir_config_parameter SET value='rgba(0,0,255,.6)' WHERE key='ribbon.background.color'"
+psql -d "${DBNAME}" -ac "UPDATE ir_config_parameter SET value = regexp_replace(value, '^CI', 'Local') WHERE key = 'ribbon.name'"
+echo 'Last date in mail_tracking_value:'
+psql -d "${DBNAME}" -ac 'SELECT max(write_date) AS "Last date in mail_tracking_value" FROM mail_tracking_value'
+
+{%- if odoo_version < "16.0" %}
+psql -d"${DBNAME}"-ac "UPDATE ir_cron set active=False"
+{%- else  %}
 # the odoo way to make duplicated db leakless
-odoo neutralize
+odoo -d "${DBNAME}" neutralize
+{%- endif %}
