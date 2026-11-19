@@ -416,6 +416,9 @@ stop_review:
     name: test/${CI_PROJECT_NAME}_${CI_MERGE_REQUEST_IID}
     action: stop
   when: manual
+  needs:
+    - job: review
+      artifacts: false
   rules:
     - if: $AK_IS_MR == "true"
 
