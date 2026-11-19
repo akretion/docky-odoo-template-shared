@@ -10,7 +10,7 @@ To start a new Odoo project, you don't need to download this repo.
 For that we deeply recommand you to install them with [pipx](https://github.com/pypa/pipx)
 
 ```
-pipx install docky
+pipx install git+https://github.com/akretion/docky.git@master
 pipx install copier
 pipx install git+https://github.com/akretion/ak.git@master
 ```
