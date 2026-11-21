@@ -95,12 +95,12 @@ services:
       - ./odoo/src/requirements.txt:/odoo/src/requirements.txt
       - ./odoo/pytest.ini:/odoo/pytest.ini
       # data
+      # shell history (bash, fish, python, ipython)
+      - ./data/history:/data/odoo/history
       - ./data/addons:/data/odoo/addons
       - ./data/filestore:/data/odoo/filestore
       - ./data/sessions:/data/odoo/sessions
       - ./data/shared:/data/odoo/shared
-      # mount home dir
-      # - ./.home/.bash_history:/home/odoo/.bash_history
       # mount backup directory
       - ./backup:/odoo/backup
   kwkhtmltopdf:

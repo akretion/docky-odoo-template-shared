@@ -1,2 +1,3 @@
 kalong[disassembly, recursive]
 inotify
+ipython
