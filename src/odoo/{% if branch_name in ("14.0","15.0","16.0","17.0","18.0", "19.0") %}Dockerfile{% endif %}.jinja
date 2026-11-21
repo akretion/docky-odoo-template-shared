@@ -43,6 +43,8 @@ RUN /odoo/bin/pip install --no-cache-dir \
 
 # Install fish shell
 RUN --mount=type=cache,target=/var/cache/apt apt-get update && apt-get install -y --no-install-recommends fish
+# fish history goes to $XDG_DATA_HOME/fish/fish_history
+ENV XDG_DATA_HOME=/data/odoo/history/share
 
 FROM thisproject as prod
 ARG SENTRY_RELEASE=0.0.0
